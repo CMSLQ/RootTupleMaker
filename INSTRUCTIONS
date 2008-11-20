@@ -1,0 +1,18 @@
+Check out this package from CVS to your CMSSW_2_1_8/src directory: (Note that you must name the 
+directory "RootTuple" in your src directory in order for this to compile!!)
+>cvs co -d Leptoquarks/RootTupleMaker UserCode/Leptoquarks/RootTupleMaker
+
+Check out the packages needed for Jet Corrections:
+>cvs co -r V01-06-05 CondFormats/JetMETObjects
+>cvs co -r V01-08-10 JetMETCorrections/Configuration
+>cvs co -r V02-09-00 JetMETCorrections/Modules
+
+Check out teh packages for Electron ID and Isolation:
+>cvs co -r V00-05-19 RecoEcal/EgammaCoreTools
+
+Compile:
+>scram b
+
+Change the file name in roottuplemaker_cfg.py to point to your input file.
+Run the RootTupleMaker:
+>cmsRun roottuplemaker_cfg.py
