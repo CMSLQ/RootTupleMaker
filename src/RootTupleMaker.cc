@@ -13,7 +13,7 @@
 //
 // Original Author:  Ellie Lockner
 //         Created:  Tue Oct 21 13:56:04 CEST 2008
-// $Id: RootTupleMaker.cc,v 1.3 2008/11/18 19:00:26 lockner Exp $
+// $Id: RootTupleMaker.cc,v 1.1 2008/11/20 17:21:05 lockner Exp $
 //
 //
 
@@ -57,6 +57,7 @@ class RootTupleMaker : public edm::EDAnalyzer {
   void SetTriggers(const edm::Event& iEvent);
 
   int singleEleRelHLTCounter;
+  int muonHLTCounter;
 
       // ----------member data ---------------------------
  // read from cfg file
@@ -74,6 +75,7 @@ class RootTupleMaker : public edm::EDAnalyzer {
   int                  numEvents_;              
   bool                 saveTrigger_;
   int                  prescaleSingleEleRel_;
+  int                  prescaleMuon_;
 
  //Output RootNtuple
   TTree *              m_tree;
@@ -162,6 +164,8 @@ class RootTupleMaker : public edm::EDAnalyzer {
   Float_t              muonPhi[MAXMUONS];
   Float_t              muonPt[MAXMUONS];
   Float_t              muonEnergy[MAXMUONS];
+  Int_t                muonCharge[MAXMUONS];
+  Float_t              muonEt[MAXMUONS];
   Float_t              muonTrkHits[MAXMUONS];
   Float_t              muonTrkD0[MAXMUONS];
   Float_t              muonTrkDz[MAXMUONS];
@@ -211,9 +215,11 @@ RootTupleMaker::RootTupleMaker(const edm::ParameterSet& iConfig)
 
   saveTrigger_           = iConfig.getUntrackedParameter<bool>("saveTrigger",1);
   prescaleSingleEleRel_  = iConfig.getUntrackedParameter<int>("prescaleSingleEleRel",30); 
+  prescaleMuon_          = iConfig.getUntrackedParameter<int>("prescaleMuon",30);
 
   //Initialize some variables
   singleEleRelHLTCounter=0;
+  muonHLTCounter=0;
 
   event=-999;
   runnum=-999;
@@ -327,10 +333,10 @@ RootTupleMaker::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
       const reco::BasicCluster& seedClus = *(SCref->seed());
       const DetId firstDetId = seedClus.getHitsByDetId()[0];// this is NOT the seed but all hits will be either endcap or barrel
 
- //now get the CaloTopology and rec hits
-  //note in practice you wouldnt hardcode the hit InputTags
-   edm::ESHandle<CaloTopology> caloTopologyHandle;
-   iSetup.get<CaloTopologyRecord>().get(caloTopologyHandle);
+//now get the CaloTopology and rec hits
+//note in practice you wouldnt hardcode the hit InputTags
+  edm::ESHandle<CaloTopology> caloTopologyHandle;
+  iSetup.get<CaloTopologyRecord>().get(caloTopologyHandle);
   edm::Handle<EcalRecHitCollection> ebReducedRecHitsHandle;
   iEvent.getByLabel("reducedEcalRecHitsEB",ebReducedRecHitsHandle);
   edm::Handle<EcalRecHitCollection> eeReducedRecHitsHandle;
@@ -543,16 +549,25 @@ RootTupleMaker::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
       if(fastSim_==1)
 	{
 	  //FastSim
-	  trkhits  = muon->track()->numberOfValidHits();
-	  trkd0    = muon->track()->d0();
-	  trkdz    = muon->track()->dz();
+// 	  trkhits  = muon->track()->numberOfValidHits();
+// 	  trkd0    = muon->track()->d0();
+// 	  trkdz    = muon->track()->dz();
 	}
 
-//       trkhits  = muon->combinedMuon()->numberOfValidHits();
-//       trkd0    = muon->combinedMuon()->d0();
-//       trkdz    = muon->combinedMuon()->dz();
+      if(muon->isGlobalMuon()){
+	
+	trkhits  = muon->globalTrack()->numberOfValidHits();
+	trkd0    = muon->globalTrack()->d0();
+	trkdz    = muon->globalTrack()->dz();
+      }
+      
+      if(muon->isStandAloneMuon()){
+	trkhits  = muon->outerTrack()->numberOfValidHits();
+	trkd0    = muon->outerTrack()->d0();
+	trkdz    = muon->outerTrack()->dz();
+      }
 
-     float ptInCone       = 0.;
+      float ptInCone       = 0.;
       float coneEMenergy   = 0.;
       float coneHADenergy  = 0.;
       float coneHOenergy   = 0.;
@@ -560,32 +575,34 @@ RootTupleMaker::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
       bool m_useTrackConeSize03 = true;
       bool m_useTrackConeSize05 = false;
 
-//       if (m_useTrackConeSize03)
-// 	{
-// 	  ptInCone      = muon->getIsolationR03().sumPt;
-// 	  coneEMenergy  = muon->getIsolationR03().emEt;
-// 	  coneHADenergy = muon->getIsolationR03().hadEt;
-// 	  coneHOenergy  = muon->getIsolationR03().hoEt;
-// 	}
-//       else if (m_useTrackConeSize05)
-// 	{
-//  	  ptInCone      = muon->getIsolationR05().sumPt;
-//  	  coneEMenergy  = muon->getIsolationR03().emEt;
-//  	  coneHADenergy = muon->getIsolationR03().hadEt;
-//  	  coneHOenergy  = muon->getIsolationR03().hoEt;
-//  	}
+      if (m_useTrackConeSize03)
+	{
+	  ptInCone      = muon->isolationR03().sumPt;
+	  coneEMenergy  = muon->isolationR03().emEt;
+	  coneHADenergy = muon->isolationR03().hadEt;
+	  coneHOenergy  = muon->isolationR03().hoEt;
+	}
+      else if (m_useTrackConeSize05)
+	{
+ 	  ptInCone      = muon->isolationR05().sumPt;
+ 	  coneEMenergy  = muon->isolationR03().emEt;
+ 	  coneHADenergy = muon->isolationR03().hadEt;
+ 	  coneHOenergy  = muon->isolationR03().hoEt;
+ 	}
 
       muonEta[muonCount] = muon->eta();
       muonPhi[muonCount] = muon->phi();
       muonPt[muonCount]= muon->pt();
       muonEnergy[muonCount] = muon->energy();
+      muonCharge[muonCount] = muon->charge();
+      muonEt[muonCount] = muon->et();
       muonTrkHits[muonCount] = trkhits;
       muonTrkD0[muonCount] = trkd0;
       muonTrkDz[muonCount] = trkdz;
-//       muonEcalIso[muonCount] = coneEMenergy;
-//       muonTrkIso[muonCount] = ptInCone;
-//       muonHcalIso[muonCount] = coneHADenergy;
-//       muonHOIso[muonCount] = coneHOenergy;
+      muonEcalIso[muonCount] = coneEMenergy;
+      muonTrkIso[muonCount] = ptInCone;
+      muonHcalIso[muonCount] = coneHADenergy;
+      muonHOIso[muonCount] = coneHOenergy;
 
      muonCount++;
 
@@ -682,18 +699,20 @@ RootTupleMaker::beginJob(const edm::EventSetup&)
   m_tree->Branch("caloJetIC5EMF",&caloJetIC5EMF,"caloJetIC5EMF[caloJetIC5Count]/F");
   m_tree->Branch("caloJetIC5HADF",&caloJetIC5HADF,"caloJetIC5HADF[caloJetIC5Count]/F");
 
-//   m_tree->Branch("muonCount",&muonCount,"muonCount/I");
-//   m_tree->Branch("muonEta",&muonEta,"muonEta[muonCount]/F");
-//   m_tree->Branch("muonPhi",&muonPhi,"muonPhi[muonCount]/F");
-//   m_tree->Branch("muonPt",&muonPt,"muonPt[muonCount]/F");
-//   m_tree->Branch("muonEnergy",&muonEnergy,"muonEnergy[muonCount]/F");
-//   m_tree->Branch("muonTrkHits",&muonTrkHits,"muonTrkHits[muonCount]/F");
-//   m_tree->Branch("muonTrkD0",&muonTrkD0,"muonTrkD0[muonCount]/F");
-//   m_tree->Branch("muonTrkDz",&muonTrkDz,"muonTrkDz[muonCount]/F");
-//   m_tree->Branch("muonEcalIso",&muonEcalIso,"muonEcalIso[muonCount]/F");
-//   m_tree->Branch("muonTrkIso",&muonTrkIso,"muonTrkIso[muonCount]/F");
-//   m_tree->Branch("muonHcalIso",&muonHcalIso,"muonHcalIso[muonCount]/F");
-//   m_tree->Branch("muonHOIso",&muonHOIso,"muonHOIso[muonCount]/F");
+  m_tree->Branch("muonCount",&muonCount,"muonCount/I");
+  m_tree->Branch("muonEta",&muonEta,"muonEta[muonCount]/F");
+  m_tree->Branch("muonPhi",&muonPhi,"muonPhi[muonCount]/F");
+  m_tree->Branch("muonPt",&muonPt,"muonPt[muonCount]/F");
+  m_tree->Branch("muonEnergy",&muonEnergy,"muonEnergy[muonCount]/F");
+  m_tree->Branch("muonCharge",&muonCharge,"muonCharge[muonCount]/I");
+  m_tree->Branch("muonEt",&muonEt,"muonEt[muonCount]/F");
+  m_tree->Branch("muonTrkHits",&muonTrkHits,"muonTrkHits[muonCount]/F");
+  m_tree->Branch("muonTrkD0",&muonTrkD0,"muonTrkD0[muonCount]/F");
+  m_tree->Branch("muonTrkDz",&muonTrkDz,"muonTrkDz[muonCount]/F");
+  m_tree->Branch("muonEcalIso",&muonEcalIso,"muonEcalIso[muonCount]/F");
+  m_tree->Branch("muonTrkIso",&muonTrkIso,"muonTrkIso[muonCount]/F");
+  m_tree->Branch("muonHcalIso",&muonHcalIso,"muonHcalIso[muonCount]/F");
+  m_tree->Branch("muonHOIso",&muonHOIso,"muonHOIso[muonCount]/F");
 
   m_tree->Branch("genMET",&genMET,"genMET/F");
   m_tree->Branch("MET",&MET,"MET/F");
