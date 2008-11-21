@@ -13,7 +13,7 @@
 //
 // Original Author:  Ellie Lockner
 //         Created:  Tue Oct 21 13:56:04 CEST 2008
-// $Id: RootTupleMaker.cc,v 1.1 2008/11/20 17:21:05 lockner Exp $
+// $Id: RootTupleMaker.cc,v 1.2 2008/11/21 08:53:57 boeriu Exp $
 //
 //
 
@@ -264,6 +264,55 @@ RootTupleMaker::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
   event = iEvent.id().event();
   runnum = iEvent.id().run();
 
+  // Fill gen info
+
+  //using HepMCProduct
+
+  // ## work in CSA08 RECO
+  //   Handle<HepMCProduct> mc;
+  //   iEvent.getByLabel("source", mc );
+  //   const HepMC::GenEvent *genEvt = mc->GetEvent();
+  //   double processID = genEvt->signal_process_id();
+  //   double pthat = genEvt->event_scale(); 
+  //   cout << processID << endl;
+  //   cout << pthat << endl;
+  // ##
+
+  //using genEvent products
+
+  // ## don't work in CSA08 RECO
+  //   Handle<int> genProcessID; 
+  //   iEvent.getByLabel( "genEventProcID", genProcessID ); 
+  //   double processID = *genProcessID;
+  //   cout << processID << endl; 
+  // ##
+
+  // ## work in CSA08 RECO
+  //   Handle<double> genEventScale; 
+  //   iEvent.getByLabel( "genEventScale", genEventScale );
+  //   double pthat = *genEventScale; 
+  //   cout << pthat << endl;
+  // ##
+
+  // ## don't work in CSA08 RECO
+  // double filter_eff = -99.; 
+  //   Handle<double> genFilterEff; 
+  //   iEvent.getByLabel( "genEventRunInfo", "FilterEfficiency", genFilterEff); 
+  //   filter_eff = *genFilterEff;
+  //   cout << filter_eff << endl; 
+  // ## 
+
+  // ## don't work in CSA08 RECO
+  //   double cross_section = -99.; 
+  //   Handle<double> genCrossSect; 
+  //   iEvent.getByLabel( "genEventRunInfo", "PreCalculatedCrossSection", genCrossSect); 
+  //   cross_section = *genCrossSect;
+  //   cout << cross_section << endl;
+  // ## 
+
+  if(debug_==true)
+    cout << "gen event info filled" << endl;
+
   
   /////////// Electrons
   ///////////////////////////////////////////////////////////////////////////////////////
@@ -333,35 +382,35 @@ RootTupleMaker::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
       const reco::BasicCluster& seedClus = *(SCref->seed());
       const DetId firstDetId = seedClus.getHitsByDetId()[0];// this is NOT the seed but all hits will be either endcap or barrel
 
-//now get the CaloTopology and rec hits
-//note in practice you wouldnt hardcode the hit InputTags
-  edm::ESHandle<CaloTopology> caloTopologyHandle;
-  iSetup.get<CaloTopologyRecord>().get(caloTopologyHandle);
-  edm::Handle<EcalRecHitCollection> ebReducedRecHitsHandle;
-  iEvent.getByLabel("reducedEcalRecHitsEB",ebReducedRecHitsHandle);
-  edm::Handle<EcalRecHitCollection> eeReducedRecHitsHandle;
-  iEvent.getByLabel("reducedEcalRecHitsEE",eeReducedRecHitsHandle);
-
-  const CaloTopology* caloTopology = caloTopologyHandle.product();
-  const EcalRecHitCollection* ebRecHits = ebReducedRecHitsHandle.product();
-  const EcalRecHitCollection* eeRecHits = eeReducedRecHitsHandle.product();
-
-  float sigmaee = -999;
-
- if(firstDetId.subdetId()==EcalBarrel){
-//      std::vector<float> localCov = EcalClusterTools::localCovariances(seedClus,ebRecHits,caloTopology);
-//     sigmaee =  sqrt(localCov[0]);
-  }else if(firstDetId.subdetId()==EcalEndcap){
-//     //identical to sigmaEtaEta which would be EcalClusterTools::covariances(seedClus,ebRecHits,caloGeometry,caloTopology)
-//     std::vector<float> localCov = EcalClusterTools::localCovariances(seedClus,eeRecHits,caloTopology);
-//     sigmaee =  sqrt(localCov[0]);
-  }
-
+      //now get the CaloTopology and rec hits
+      //note in practice you wouldnt hardcode the hit InputTags
+      edm::ESHandle<CaloTopology> caloTopologyHandle;
+      iSetup.get<CaloTopologyRecord>().get(caloTopologyHandle);
+      edm::Handle<EcalRecHitCollection> ebReducedRecHitsHandle;
+      iEvent.getByLabel("reducedEcalRecHitsEB",ebReducedRecHitsHandle);
+      edm::Handle<EcalRecHitCollection> eeReducedRecHitsHandle;
+      iEvent.getByLabel("reducedEcalRecHitsEE",eeReducedRecHitsHandle);
+      
+      const CaloTopology* caloTopology = caloTopologyHandle.product();
+      const EcalRecHitCollection* ebRecHits = ebReducedRecHitsHandle.product();
+      const EcalRecHitCollection* eeRecHits = eeReducedRecHitsHandle.product();
+      
+      float sigmaee = -999;
+      
+      if(firstDetId.subdetId()==EcalBarrel){
+	//      std::vector<float> localCov = EcalClusterTools::localCovariances(seedClus,ebRecHits,caloTopology);
+	//     sigmaee =  sqrt(localCov[0]);
+      }else if(firstDetId.subdetId()==EcalEndcap){
+	//     //identical to sigmaEtaEta which would be EcalClusterTools::covariances(seedClus,ebRecHits,caloGeometry,caloTopology)
+	//     std::vector<float> localCov = EcalClusterTools::localCovariances(seedClus,eeRecHits,caloTopology);
+	//     sigmaee =  sqrt(localCov[0]);
+      }
+      
       float hOverE = (*electron).first->hadronicOverEm();
       float deltaPhiIn = (*electron).first->deltaPhiSuperClusterTrackAtVtx();
       float deltaEtaIn = (*electron).first->deltaEtaSuperClusterTrackAtVtx();
 
-
+      
       // Set variables in RootNtuple
       eleEta[eleCount]=(*electron).first->eta();
       elePhi[eleCount]=(*electron).first->phi();

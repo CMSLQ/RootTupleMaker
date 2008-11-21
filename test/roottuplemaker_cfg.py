@@ -5,37 +5,21 @@ process = cms.Process("treeCreator")
 
 process.load("FWCore.MessageService.MessageLogger_cfi")
 
-process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(-1) )
+############## IMPORTANT ########################################
+# if you run over many samples ans you save the log remember to reduce
+# the size of the output by prescaling the report of the event number
+process.load("FWCore.MessageLogger.MessageLogger_cfi")
+process.MessageLogger.cerr.default.limit = 10
+process.MessageLogger.cerr.FwkReport.reportEvery = 100
+#################################################################
+
+process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(200) )
 
 process.source = cms.Source("PoolSource",
     fileNames = cms.untracked.vstring(
-       'file:/afs/cern.ch/user/l/lockner/scratch0/CMSSW_2_1_8/src/data/LQ300_HLT.root'
-       # 'file:/data/groups/LQ/FastSim/Leptoquarks/2_1_6/300/LQ_300_HLT_080916_59_0.root',
-       #'file:/data/groups/LQ/FastSim/Leptoquarks/2_1_6/300/LQ_300_HLT_080916_59_1.root',
-       #'file:/data/groups/LQ/FastSim/Leptoquarks/2_1_6/300/LQ_300_HLT_080916_59_2.root',
-       #'file:/data/groups/LQ/FastSim/Leptoquarks/2_1_6/300/LQ_300_HLT_080916_59_3.root',
-       #'file:/data/groups/LQ/FastSim/Leptoquarks/2_1_6/300/LQ_300_HLT_080916_59_4.root',
-       #'file:/data/groups/LQ/FastSim/Leptoquarks/2_1_6/300/LQ_300_HLT_080916_59_5.root',
-       #'file:/data/groups/LQ/FastSim/Leptoquarks/2_1_6/300/LQ_300_HLT_080916_59_6.root',
-       #'file:/data/groups/LQ/FastSim/Leptoquarks/2_1_6/300/LQ_300_HLT_080916_59_7.root',
-       #'file:/data/groups/LQ/FastSim/Leptoquarks/2_1_6/300/LQ_300_HLT_080916_59_8.root',
-       #'file:/data/groups/LQ/FastSim/Leptoquarks/2_1_6/300/LQ_300_HLT_080916_59_9.root',
-       #'file:/data/groups/LQ/FastSim/Leptoquarks/2_1_6/300/LQ_300_HLT_080916_59_10.root'
-       #'file:/data/groups/LQ/FastSim/Leptoquarks/2_1_6/300/LQ_300_HLT_080916_59_11.root',
-       #'file:/data/groups/LQ/FastSim/Leptoquarks/2_1_6/300/LQ_300_HLT_080916_59_12.root',
-       #'file:/data/groups/LQ/FastSim/Leptoquarks/2_1_6/300/LQ_300_HLT_080916_59_13.root',
-       #'file:/data/groups/LQ/FastSim/Leptoquarks/2_1_6/300/LQ_300_HLT_080916_59_14.root',
-       #'file:/data/groups/LQ/FastSim/Leptoquarks/2_1_6/300/LQ_300_HLT_080916_59_15.root',
-       #'file:/data/groups/LQ/FastSim/Leptoquarks/2_1_6/300/LQ_300_HLT_080916_59_16.root',
-       #'file:/data/groups/LQ/FastSim/Leptoquarks/2_1_6/300/LQ_300_HLT_080916_59_17.root',
-       #'file:/data/groups/LQ/FastSim/Leptoquarks/2_1_6/300/LQ_300_HLT_080916_59_18.root',
-       #'file:/data/groups/LQ/FastSim/Leptoquarks/2_1_6/300/LQ_300_HLT_080916_59_19.root',
-       #'file:/data/groups/LQ/FastSim/Leptoquarks/2_1_6/300/LQ_300_HLT_080916_59_20.root'
-       #'file:/data/groups/LQ/FastSim/Leptoquarks/2_1_6/300/LQ_300_HLT_080916_59_21.root',
-       #'file:/data/groups/LQ/FastSim/Leptoquarks/2_1_6/300/LQ_300_HLT_080916_59_22.root',
-       #'file:/data/groups/LQ/FastSim/Leptoquarks/2_1_6/300/LQ_300_HLT_080916_59_23.root',
-       #'file:/data/groups/LQ/FastSim/Leptoquarks/2_1_6/300/LQ_300_HLT_080916_59_24.root'
-        #'file:/data/users/twedt/Leptoquark/PAT/LQ_test_full.root'
+       'file:/home/santanas/Data/Leptoquarks/LQ_300_HLT_080916_59_1.root'     #FASTSIM AOD (LQ)
+       #'file:/home/santanas/Data/C81A2D83-ED9A-DD11-98F1-0015C5E59E7F.root'  #FULLSIM RECO (QCD)
+
     )
 )
 
@@ -54,7 +38,7 @@ process.treeCreator.PAT             = cms.untracked.bool(False)
 process.treeCreator.debug           = cms.untracked.bool(False)
 # overall luminosity normalization  (in pb-1) 	
 process.treeCreator.luminosity      =  cms.untracked.double(100)
-process.treeCreator.numEvents       = cms.untracked.int32(100)
+process.treeCreator.numEvents       = cms.untracked.int32(10)
 process.treeCreator.saveTrigger     = cms.untracked.bool(True)
 process.treeCreator.UDSQuarksCorrector = cms.string("L5FlavorJetCorrectorUds")
 
