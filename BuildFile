@@ -16,6 +16,7 @@
 <use name=DataFormats/EcalRecHit>
 <use name=DataFormats/EgammaReco>
 <use name=DataFormats/MuonReco>
+<use name=RecoEcal/EgammaCoreTools>
 <use name=clhep>
 <use name=root>
 <flags EDM_PLUGIN=1>
@@ -39,6 +40,7 @@
    <use name=Geometry/CaloGeometry>
    <use name=Geometry/CaloTopology>
    <use name=Geometry/EcalAlgo>
+   <use name=RecoEcal/EgammaCoreTools>
 </export>
 
 

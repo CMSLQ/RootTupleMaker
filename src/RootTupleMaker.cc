@@ -13,7 +13,7 @@
 //
 // Original Author:  Ellie Lockner
 //         Created:  Tue Oct 21 13:56:04 CEST 2008
-// $Id: RootTupleMaker.cc,v 1.2 2008/11/21 08:53:57 boeriu Exp $
+// $Id: RootTupleMaker.cc,v 1.3 2008/11/21 16:36:13 santanas Exp $
 //
 //
 
@@ -321,6 +321,30 @@ RootTupleMaker::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
   iEvent.getByLabel("pixelMatchGsfElectrons",emObjectHandle_);
   const edm::View<reco::Candidate> *emObjectHandle = emObjectHandle_.product();
 
+  //now get the CaloTopology and rec hits for ID
+  //note in practice you wouldnt hardcode the hit InputTags
+  edm::ESHandle<CaloTopology> caloTopologyHandle;
+  iSetup.get<CaloTopologyRecord>().get(caloTopologyHandle);
+  edm::Handle<EcalRecHitCollection> ebReducedRecHitsHandle;
+  iEvent.getByLabel("reducedEcalRecHitsEB",ebReducedRecHitsHandle);
+  edm::Handle<EcalRecHitCollection> eeReducedRecHitsHandle;
+  iEvent.getByLabel("reducedEcalRecHitsEE",eeReducedRecHitsHandle);
+ 
+  const CaloTopology* caloTopology = caloTopologyHandle.product();
+  const EcalRecHitCollection* ebRecHits = ebReducedRecHitsHandle.product();
+  const EcalRecHitCollection* eeRecHits = eeReducedRecHitsHandle.product();
+
+//   //Isolation collections
+//   //trkiso ( EgammaElectronTkIsolationProducer )
+//   edm::Handle< reco::PMGsfElectronIsoCollection > trkIsolationHandle;
+//   iEvent.getByLabel("egammaElectronTkRelIsolation",trkIsolationHandle);
+//   //numtrksio ( EgammaElectronTkNumIsolationProducer )
+//   edm::Handle< reco::PMGsfElectronIsoNumCollection > trkNumIsolationHandle;
+//   iEvent.getByLabel("egammaElectronTkNumIsolation",trkNumIsolationHandle);
+//   //ecaliso ( EgammaEcalIsolationProducer )
+//   edm::Handle< reco::CandViewDoubleAssociations > ecalIsolationHandle;
+//   iEvent.getByLabel("egammaEcalRelIsolation",ecalIsolationHandle);
+
   /// sort electrons
   std::list<my_pair> electronRefListPair;
   for(int elecand_idx = 0; elecand_idx < (int)emObjectHandle->size(); elecand_idx++) 
@@ -375,37 +399,21 @@ RootTupleMaker::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
       if(eleCount > maxelectrons_)
 	break;
 
-      bool hasBarrel=true;
-      bool hasEndcap=true;
-
-      //now we need to get the basic cluster and decide whether its barrel or endcap
+      //now we need to get the basic cluster and decide if it is barrel or endcap
       const reco::BasicCluster& seedClus = *(SCref->seed());
       const DetId firstDetId = seedClus.getHitsByDetId()[0];// this is NOT the seed but all hits will be either endcap or barrel
 
-      //now get the CaloTopology and rec hits
-      //note in practice you wouldnt hardcode the hit InputTags
-      edm::ESHandle<CaloTopology> caloTopologyHandle;
-      iSetup.get<CaloTopologyRecord>().get(caloTopologyHandle);
-      edm::Handle<EcalRecHitCollection> ebReducedRecHitsHandle;
-      iEvent.getByLabel("reducedEcalRecHitsEB",ebReducedRecHitsHandle);
-      edm::Handle<EcalRecHitCollection> eeReducedRecHitsHandle;
-      iEvent.getByLabel("reducedEcalRecHitsEE",eeReducedRecHitsHandle);
-      
-      const CaloTopology* caloTopology = caloTopologyHandle.product();
-      const EcalRecHitCollection* ebRecHits = ebReducedRecHitsHandle.product();
-      const EcalRecHitCollection* eeRecHits = eeReducedRecHitsHandle.product();
-      
       float sigmaee = -999;
-      
+
       if(firstDetId.subdetId()==EcalBarrel){
-	//      std::vector<float> localCov = EcalClusterTools::localCovariances(seedClus,ebRecHits,caloTopology);
-	//     sigmaee =  sqrt(localCov[0]);
+	std::vector<float> localCov = EcalClusterTools::localCovariances(seedClus,ebRecHits,caloTopology);
+	sigmaee =  sqrt(localCov[0]);
       }else if(firstDetId.subdetId()==EcalEndcap){
-	//     //identical to sigmaEtaEta which would be EcalClusterTools::covariances(seedClus,ebRecHits,caloGeometry,caloTopology)
-	//     std::vector<float> localCov = EcalClusterTools::localCovariances(seedClus,eeRecHits,caloTopology);
-	//     sigmaee =  sqrt(localCov[0]);
+	//identical to sigmaEtaEta which would be EcalClusterTools::covariances(seedClus,ebRecHits,caloGeometry,caloTopology)
+	std::vector<float> localCov = EcalClusterTools::localCovariances(seedClus,eeRecHits,caloTopology);
+	sigmaee =  sqrt(localCov[0]);
       }
-      
+
       float hOverE = (*electron).first->hadronicOverEm();
       float deltaPhiIn = (*electron).first->deltaPhiSuperClusterTrackAtVtx();
       float deltaEtaIn = (*electron).first->deltaEtaSuperClusterTrackAtVtx();
@@ -419,7 +427,7 @@ RootTupleMaker::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
       eleCaloEnergy[eleCount]=(*electron).first->caloEnergy();
 
        eleHoE[eleCount]=hOverE;
-       //       eleSigmaEE[eleCount]=sigmaee;
+       eleSigmaEE[eleCount]=sigmaee;
        eleDeltaPhiTrkSC[eleCount]=deltaPhiIn;
        eleDeltaEtaTrkSC[eleCount]=deltaEtaIn;
       
@@ -440,6 +448,13 @@ RootTupleMaker::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
   CreateParticleTree( genParticles );     
   if(debug_==true)
     cout << "gen particles filled" << endl;
+
+//    reco::GenParticleCollection::const_iterator genParts_it;
+//   for (genParts_it = genParticles->begin();
+//   	genParts_it != genParticles->end(); ++genParts_it)
+//        {
+// 	 if (abs(genParts_it->pdgId()) == 13) cout << "Found muon" << endl;
+//        }
 
   //////////// GenJets
   ////////////////////////////////////////////////////////////////////////////////////////
@@ -719,10 +734,10 @@ RootTupleMaker::beginJob(const edm::EventSetup&)
   m_tree->Branch("eleEnergy",&eleEnergy,"eleEnergy[eleCount]/F");
   m_tree->Branch("eleCaloEnergy",&eleCaloEnergy,"eleCaloEnergy[eleCount]/F");
 
-//   m_tree->Branch("eleHoE",&eleHoE,"eleHoE[eleCount]/F");
-//   m_tree->Branch("eleSigmaEE",&eleSigmaEE,"eleSigmaEE[eleCount]/F");
-//   m_tree->Branch("eleDeltaPhiTrkSC",&eleDeltaPhiTrkSC,"eleDeltaPhiTrkSC[eleCount]/F");
-//   m_tree->Branch("eleDeltaEtaTrkSC",&eleDeltaEtaTrkSC,"eleDeltaEtaTrkSC[eleCount]/F");
+  m_tree->Branch("eleHoE",&eleHoE,"eleHoE[eleCount]/F");
+  m_tree->Branch("eleSigmaEE",&eleSigmaEE,"eleSigmaEE[eleCount]/F");
+  m_tree->Branch("eleDeltaPhiTrkSC",&eleDeltaPhiTrkSC,"eleDeltaPhiTrkSC[eleCount]/F");
+  m_tree->Branch("eleDeltaEtaTrkSC",&eleDeltaEtaTrkSC,"eleDeltaEtaTrkSC[eleCount]/F");
 
 //   m_tree->Branch("eleTrkIso",&eleTrkIso,"eleTrkIso[eleCount]/F");
 //   m_tree->Branch("eleNumTrkIso",&eleNumTrkIso,"eleNumTrkIso[eleCount]/F");
