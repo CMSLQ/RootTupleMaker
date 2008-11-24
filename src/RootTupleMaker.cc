@@ -13,7 +13,7 @@
 //
 // Original Author:  Ellie Lockner
 //         Created:  Tue Oct 21 13:56:04 CEST 2008
-// $Id: RootTupleMaker.cc,v 1.3 2008/11/21 16:36:13 santanas Exp $
+// $Id: RootTupleMaker.cc,v 1.4 2008/11/21 16:57:41 lockner Exp $
 //
 //
 
@@ -160,6 +160,9 @@ class RootTupleMaker : public edm::EDAnalyzer {
 
   // Muons
   Int_t                muonCount;
+  Int_t                muonGlobalCount;
+  Int_t                muonStandAloneCount;
+  Int_t                muonTrackerCount;
   Float_t              muonEta[MAXMUONS];
   Float_t              muonPhi[MAXMUONS];
   Float_t              muonPt[MAXMUONS];
@@ -173,6 +176,9 @@ class RootTupleMaker : public edm::EDAnalyzer {
   Float_t              muonTrkIso[MAXMUONS];
   Float_t              muonHcalIso[MAXMUONS];
   Float_t              muonHOIso[MAXMUONS];
+  Float_t              muonGlobalChi2[MAXMUONS];
+  Float_t              muonStandAloneChi2[MAXMUONS];
+  Float_t              muonTrackerChi2[MAXMUONS];
 
   // MET 
   Float_t              genMET;
@@ -609,7 +615,11 @@ RootTupleMaker::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
       unsigned int trkhits = 0;
       float trkd0 = 0.;
       float trkdz = 0.;
+      float muonGlobalChi2=0.;
+      float muonStandAloneChi2 =0.;
+      float muonTrackerChi2 =0.;
 
+      /*
       if(fastSim_==1)
 	{
 	  //FastSim
@@ -617,18 +627,31 @@ RootTupleMaker::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 // 	  trkd0    = muon->track()->d0();
 // 	  trkdz    = muon->track()->dz();
 	}
+      */
 
       if(muon->isGlobalMuon()){
 	
 	trkhits  = muon->globalTrack()->numberOfValidHits();
 	trkd0    = muon->globalTrack()->d0();
 	trkdz    = muon->globalTrack()->dz();
+	muonGlobalChi2 = muon->globalTrack()->normalizedChi2();
+	muonGlobalCount++;
       }
       
       if(muon->isStandAloneMuon()){
 	trkhits  = muon->outerTrack()->numberOfValidHits();
 	trkd0    = muon->outerTrack()->d0();
 	trkdz    = muon->outerTrack()->dz();
+	muonStandAloneChi2 = muon->outerTrack()->normalizedChi2();
+	muonStandAloneCount++;
+      }
+
+      if (muon->isTrackerMuon()) {
+	trkhits  = muon->innerTrack()->numberOfValidHits();
+	trkd0    = muon->innerTrack()->d0();
+	trkdz    = muon->innerTrack()->dz();
+	muonTrackerChi2 = muon->innerTrack()->normalizedChi2();
+	muonTrackerCount++;
       }
 
       float ptInCone       = 0.;
@@ -639,37 +662,38 @@ RootTupleMaker::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
       bool m_useTrackConeSize03 = true;
       bool m_useTrackConeSize05 = false;
 
-      if (m_useTrackConeSize03)
-	{
-	  ptInCone      = muon->isolationR03().sumPt;
-	  coneEMenergy  = muon->isolationR03().emEt;
-	  coneHADenergy = muon->isolationR03().hadEt;
-	  coneHOenergy  = muon->isolationR03().hoEt;
-	}
-      else if (m_useTrackConeSize05)
-	{
- 	  ptInCone      = muon->isolationR05().sumPt;
- 	  coneEMenergy  = muon->isolationR03().emEt;
- 	  coneHADenergy = muon->isolationR03().hadEt;
- 	  coneHOenergy  = muon->isolationR03().hoEt;
- 	}
-
-      muonEta[muonCount] = muon->eta();
-      muonPhi[muonCount] = muon->phi();
-      muonPt[muonCount]= muon->pt();
-      muonEnergy[muonCount] = muon->energy();
-      muonCharge[muonCount] = muon->charge();
-      muonEt[muonCount] = muon->et();
-      muonTrkHits[muonCount] = trkhits;
-      muonTrkD0[muonCount] = trkd0;
-      muonTrkDz[muonCount] = trkdz;
-      muonEcalIso[muonCount] = coneEMenergy;
-      muonTrkIso[muonCount] = ptInCone;
-      muonHcalIso[muonCount] = coneHADenergy;
-      muonHOIso[muonCount] = coneHOenergy;
-
-     muonCount++;
-
+      if(muon->isGlobalMuon()){
+	if (m_useTrackConeSize03)
+	  {
+	    ptInCone      = muon->isolationR03().sumPt;
+	    coneEMenergy  = muon->isolationR03().emEt;
+	    coneHADenergy = muon->isolationR03().hadEt;
+	    coneHOenergy  = muon->isolationR03().hoEt;
+	  }
+	else if (m_useTrackConeSize05)
+	  {
+	    ptInCone      = muon->isolationR05().sumPt;
+	    coneEMenergy  = muon->isolationR03().emEt;
+	    coneHADenergy = muon->isolationR03().hadEt;
+	    coneHOenergy  = muon->isolationR03().hoEt;
+	  }
+	
+	muonEta[muonCount] = muon->eta();
+	muonPhi[muonCount] = muon->phi();
+	muonPt[muonCount]= muon->pt();
+	muonEnergy[muonCount] = muon->energy();
+	muonCharge[muonCount] = muon->charge();
+	muonEt[muonCount] = muon->et();
+	muonTrkHits[muonCount] = trkhits;
+	muonTrkD0[muonCount] = trkd0;
+	muonTrkDz[muonCount] = trkdz;
+	muonEcalIso[muonCount] = coneEMenergy;
+	muonTrkIso[muonCount] = ptInCone;
+	muonHcalIso[muonCount] = coneHADenergy;
+	muonHOIso[muonCount] = coneHOenergy;
+	
+	muonCount++;
+      }
     } 
 
   //////////////////////////////////////////////////////////////////////////////////////////////
@@ -764,6 +788,9 @@ RootTupleMaker::beginJob(const edm::EventSetup&)
   m_tree->Branch("caloJetIC5HADF",&caloJetIC5HADF,"caloJetIC5HADF[caloJetIC5Count]/F");
 
   m_tree->Branch("muonCount",&muonCount,"muonCount/I");
+  m_tree->Branch("muonStandAloneCount",&muonStandAloneCount,"muonStandAloneCount/I");
+  m_tree->Branch("muonGlobalCount",&muonGlobalCount,"muonGlobalCount/I");
+  m_tree->Branch("muonTrackerCount",&muonTrackerCount,"muonTrackerCount/I");
   m_tree->Branch("muonEta",&muonEta,"muonEta[muonCount]/F");
   m_tree->Branch("muonPhi",&muonPhi,"muonPhi[muonCount]/F");
   m_tree->Branch("muonPt",&muonPt,"muonPt[muonCount]/F");
@@ -777,6 +804,9 @@ RootTupleMaker::beginJob(const edm::EventSetup&)
   m_tree->Branch("muonTrkIso",&muonTrkIso,"muonTrkIso[muonCount]/F");
   m_tree->Branch("muonHcalIso",&muonHcalIso,"muonHcalIso[muonCount]/F");
   m_tree->Branch("muonHOIso",&muonHOIso,"muonHOIso[muonCount]/F");
+  m_tree->Branch("muonGlobalChi2",&muonGlobalChi2,"muonGlobalChi2[muonCount]/F");
+  m_tree->Branch("muonStandAloneChi2",&muonStandAloneChi2,"muonStandAloneChi2[muonCount]/F");
+  m_tree->Branch("muonTrackerChi2",&muonTrackerChi2,"muonTrackerChi2[muonCount]/F");
 
   m_tree->Branch("genMET",&genMET,"genMET/F");
   m_tree->Branch("MET",&MET,"MET/F");
