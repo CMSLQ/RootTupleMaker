@@ -72,11 +72,7 @@
 #include "Geometry/CaloTopology/interface/EcalEndcapTopology.h"
 #include "Geometry/CaloTopology/interface/EcalPreshowerTopology.h"
 
-#include "RecoEcal/EgammaCoreTools/interface/EcalClusterLazyTools.h"
 #include "RecoEcal/EgammaCoreTools/interface/EcalClusterTools.h"
-
-#include "DataFormats/EcalRecHit/interface/EcalRecHitCollections.h"
-#include "DataFormats/EcalDetId/interface/EcalSubdetector.h"
 
 #include "Geometry/CaloGeometry/interface/CaloGeometry.h"
 #include "Geometry/CaloTopology/interface/CaloTopology.h"
@@ -85,6 +81,10 @@
 
 
 //Electron Isolation
+#include "DataFormats/Candidate/interface/CandAssociation.h"
+#include "DataFormats/RecoCandidate/interface/RecoCandidate.h"
+#include "DataFormats/EgammaCandidates/interface/GsfElectronIsoCollection.h"
+#include "DataFormats/EgammaCandidates/interface/GsfElectronIsoNumCollection.h"
 
 
 // PAT stuff

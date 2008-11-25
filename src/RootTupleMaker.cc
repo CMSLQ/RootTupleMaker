@@ -13,7 +13,7 @@
 //
 // Original Author:  Ellie Lockner
 //         Created:  Tue Oct 21 13:56:04 CEST 2008
-// $Id: RootTupleMaker.cc,v 1.4 2008/11/21 16:57:41 lockner Exp $
+// $Id: RootTupleMaker.cc,v 1.5 2008/11/24 14:55:43 boeriu Exp $
 //
 //
 
@@ -89,7 +89,6 @@ class RootTupleMaker : public edm::EDAnalyzer {
   float                m_cross_section;
   float                m_auto_cross_section;
   int                  m_processID;
-  int                  m_ALPGENprocessID;
   float                m_filter_eff;
   float                m_pthat;
   float                m_weight;              
@@ -233,7 +232,6 @@ RootTupleMaker::RootTupleMaker(const edm::ParameterSet& iConfig)
   m_cross_section=-999.;
   m_auto_cross_section=-999.;
   m_processID=-999;
-  m_ALPGENprocessID=-999;
   m_filter_eff=-999.;
   m_pthat=-999.;
   m_weight=-999.;              
@@ -274,15 +272,17 @@ RootTupleMaker::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 
   //using HepMCProduct
 
-  // ## work in CSA08 RECO
-  //   Handle<HepMCProduct> mc;
-  //   iEvent.getByLabel("source", mc );
-  //   const HepMC::GenEvent *genEvt = mc->GetEvent();
-  //   double processID = genEvt->signal_process_id();
-  //   double pthat = genEvt->event_scale(); 
-  //   cout << processID << endl;
-  //   cout << pthat << endl;
-  // ##
+  // work in CSA08 RECO //////////////////////////////////
+    Handle<HepMCProduct> mc;
+    iEvent.getByLabel("source", mc );
+    const HepMC::GenEvent *genEvt = mc->GetEvent();
+    int processID = genEvt->signal_process_id();
+    double pthat = genEvt->event_scale(); 
+//     cout << processID << endl;
+//     cout << pthat << endl;
+    m_processID = processID;
+    m_pthat = pthat;
+
 
   //using genEvent products
 
@@ -340,16 +340,17 @@ RootTupleMaker::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
   const EcalRecHitCollection* ebRecHits = ebReducedRecHitsHandle.product();
   const EcalRecHitCollection* eeRecHits = eeReducedRecHitsHandle.product();
 
-//   //Isolation collections
-//   //trkiso ( EgammaElectronTkIsolationProducer )
-//   edm::Handle< reco::PMGsfElectronIsoCollection > trkIsolationHandle;
-//   iEvent.getByLabel("egammaElectronTkRelIsolation",trkIsolationHandle);
-//   //numtrksio ( EgammaElectronTkNumIsolationProducer )
-//   edm::Handle< reco::PMGsfElectronIsoNumCollection > trkNumIsolationHandle;
-//   iEvent.getByLabel("egammaElectronTkNumIsolation",trkNumIsolationHandle);
-//   //ecaliso ( EgammaEcalIsolationProducer )
-//   edm::Handle< reco::CandViewDoubleAssociations > ecalIsolationHandle;
-//   iEvent.getByLabel("egammaEcalRelIsolation",ecalIsolationHandle);
+  //Isolation collections
+  //trkiso ( EgammaElectronTkIsolationProducer )
+  edm::Handle< reco::CandViewDoubleAssociations > trkIsolationHandle;
+  iEvent.getByLabel("egammaElectronTkIsolation",trkIsolationHandle);
+  //numtrksio ( EgammaElectronTkNumIsolationProducer )
+  edm::Handle< reco::CandViewDoubleAssociations > trkNumIsolationHandle;
+  iEvent.getByLabel("egammaElectronTkNumIsolation",trkNumIsolationHandle);
+  //ecaliso ( EgammaEcalIsolationProducer )
+  edm::Handle< reco::CandViewDoubleAssociations > ecalIsolationHandle;
+  iEvent.getByLabel("egammaEcalRecHitIsolation",ecalIsolationHandle);
+
 
   /// sort electrons
   std::list<my_pair> electronRefListPair;
@@ -420,10 +421,19 @@ RootTupleMaker::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 	sigmaee =  sqrt(localCov[0]);
       }
 
+      //////////ID variables
       float hOverE = (*electron).first->hadronicOverEm();
       float deltaPhiIn = (*electron).first->deltaPhiSuperClusterTrackAtVtx();
       float deltaEtaIn = (*electron).first->deltaEtaSuperClusterTrackAtVtx();
 
+      //////////Iso variables
+
+      // this retrieves the index in the original collection associated to the reference to electron
+      int index = (*electron).second;
+
+      double trkIso = (*trkIsolationHandle)[index].second; 
+      double trkNumIso = (*trkNumIsolationHandle)[index].second; 
+      double ecalIso = (*ecalIsolationHandle)[index].second;
       
       // Set variables in RootNtuple
       eleEta[eleCount]=(*electron).first->eta();
@@ -437,9 +447,9 @@ RootTupleMaker::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
        eleDeltaPhiTrkSC[eleCount]=deltaPhiIn;
        eleDeltaEtaTrkSC[eleCount]=deltaEtaIn;
       
-//       eleTrkIso[eleCount]=trkIso
-//       eleNumTrkIso[eleCount]=trkNumIso;
-//       eleEcalIso[eleCount]=ecalIso;
+      eleTrkIso[eleCount]=trkIso;
+      eleNumTrkIso[eleCount]=trkNumIso;
+      eleEcalIso[eleCount]=ecalIso;
 
       //go to next electron
       eleCount++;
@@ -722,12 +732,11 @@ RootTupleMaker::beginJob(const edm::EventSetup&)
   m_tree->Branch("event",&event,"event/I");
   m_tree->Branch("run",&runnum,"runnum/I");
 
+   m_tree->Branch("processID",&m_processID,"processID/I");
+   m_tree->Branch("pthat",&m_pthat,"pthat/F");
 //   m_tree->Branch("cross_section",&m_cross_section,"cross_section/F");
 //   m_tree->Branch("auto_cross_section",&m_auto_cross_section,"auto_cross_section/F");
-//   m_tree->Branch("processID",&m_processID,"processID/I");
-//   m_tree->Branch("ALPGENprocessID",&m_ALPGENprocessID,"ALPGENprocessID/I");
 //   m_tree->Branch("filter_eff",&m_filter_eff,"filter_eff/F"); 
-//   m_tree->Branch("pthat",&m_pthat,"pthat/F");
 //   m_tree->Branch("weight",&m_weight,"weight/F");
   
   m_tree->Branch("GenParticleCount",&m_GenParticleCount,"GenParticleCount/I");
@@ -763,9 +772,9 @@ RootTupleMaker::beginJob(const edm::EventSetup&)
   m_tree->Branch("eleDeltaPhiTrkSC",&eleDeltaPhiTrkSC,"eleDeltaPhiTrkSC[eleCount]/F");
   m_tree->Branch("eleDeltaEtaTrkSC",&eleDeltaEtaTrkSC,"eleDeltaEtaTrkSC[eleCount]/F");
 
-//   m_tree->Branch("eleTrkIso",&eleTrkIso,"eleTrkIso[eleCount]/F");
-//   m_tree->Branch("eleNumTrkIso",&eleNumTrkIso,"eleNumTrkIso[eleCount]/F");
-//   m_tree->Branch("eleEcalIso",&eleEcalIso,"eleEcalIso[eleCount]/F");
+  m_tree->Branch("eleTrkIso",&eleTrkIso,"eleTrkIso[eleCount]/F");
+  m_tree->Branch("eleNumTrkIso",&eleNumTrkIso,"eleNumTrkIso[eleCount]/F");
+  m_tree->Branch("eleEcalIso",&eleEcalIso,"eleEcalIso[eleCount]/F");
 
   m_tree->Branch("genJetCount",&genJetCount,"genJetCount/I");
   m_tree->Branch("genJetEta",&genJetEta,"genJetEta[genJetCount]/F");

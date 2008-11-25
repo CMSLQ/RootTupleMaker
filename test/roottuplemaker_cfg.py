@@ -9,17 +9,17 @@ process.load("FWCore.MessageService.MessageLogger_cfi")
 # if you run over many samples ans you save the log remember to reduce
 # the size of the output by prescaling the report of the event number
 process.load("FWCore.MessageLogger.MessageLogger_cfi")
-process.MessageLogger.cerr.default.limit = 10
-#process.MessageLogger.cerr.FwkReport.reportEvery = 100
+process.MessageLogger.cerr.default.limit = 100
+process.MessageLogger.cerr.FwkReport.reportEvery = 100
 #################################################################
 
-process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(10) )
+process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(-1) )
 
 process.source = cms.Source("PoolSource",
     fileNames = cms.untracked.vstring(
        #'file:/home/santanas/Data/Leptoquarks/LQ_300_HLT_080916_59_1.root'     #FASTSIM AOD (LQ)
-       #'file:/home/santanas/Data/C81A2D83-ED9A-DD11-98F1-0015C5E59E7F.root'  #FULLSIM RECO (QCD)
-       'file:/afs/cern.ch/user/l/lockner/scratch0/CMSSW_2_1_8/src/data/LQ300_HLT.root'
+       'file:/home/santanas/Data/C81A2D83-ED9A-DD11-98F1-0015C5E59E7F.root'  #FULLSIM RECO (QCD)
+       #'file:/afs/cern.ch/user/l/lockner/scratch0/CMSSW_2_1_8/src/data/LQ300_HLT.root'
 
     )
 )
@@ -41,13 +41,17 @@ process.treeCreator.debug           = cms.untracked.bool(False)
 process.treeCreator.luminosity      =  cms.untracked.double(100)
 process.treeCreator.numEvents       = cms.untracked.int32(10)
 process.treeCreator.saveTrigger     = cms.untracked.bool(True)
-process.treeCreator.UDSQuarksCorrector = cms.string("L5FlavorJetCorrectorUds")
 
 ######## electron isolation  ########
-##process.load( "RecoEgamma.EgammaIsolationAlgos.eleIsolationSequence_cff") ## import *
 process.load("Configuration.StandardSequences.Geometry_cff")
 process.load("Geometry.CaloEventSetup.CaloTopology_cfi")
-process.load("RecoEgamma.EgammaIsolationAlgos.egammaIsolationSequence_cff")
+process.load("EgammaAnalysis.EgammaIsolationProducers.egammaElectronTkIsolation_cfi")
+process.load("EgammaAnalysis.EgammaIsolationProducers.egammaElectronTkNumIsolation_cfi")
+process.load("EgammaAnalysis.EgammaIsolationProducers.egammaEcalRecHitIsolation_cfi")
+#process.load("EgammaAnalysis.EgammaIsolationProducers.egammaEcalRelIsolationSequence_cff")
+
+#process.egammaEcalRecHitIsolation.extRadius = cms.double(0.3)
+#process.egammaEcalRecHitIsolation.etMin = cms.double(0.)
 
 #############   Define the L2 correction service #####
 process.L2RelativeJetCorrector = cms.ESSource("L2RelativeCorrectionService", 
@@ -90,5 +94,8 @@ process.L2L3L5CorJet = cms.EDProducer("CaloJetCorrectionProducer",
 ##process.prefer("L2L3L5JetCorrector") 
 
 ##process.p = cms.Path(process.L2L3CorJet * process.treeCreator)
-##process.p = cms.Path(process.L2L3L5CorJet * process.L2L3CorJet * process.egammaIsolationSequence * process.treeCreator)
-process.p = cms.Path(process.L2L3L5CorJet * process.L2L3CorJet * process.treeCreator)
+#process.p = cms.Path(process.L2L3L5CorJet * process.L2L3CorJet * process.egammaIsolationSequence * process.treeCreator)
+process.p = cms.Path(process.L2L3L5CorJet * process.L2L3CorJet
+                       * process.egammaElectronTkIsolation * process.egammaEcalRecHitIsolation * process.egammaElectronTkNumIsolation
+                       * process.treeCreator)
+
