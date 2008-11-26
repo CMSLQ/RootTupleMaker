@@ -13,7 +13,7 @@
 //
 // Original Author:  Ellie Lockner
 //         Created:  Tue Oct 21 13:56:04 CEST 2008
-// $Id: RootTupleMaker.cc,v 1.6 2008/11/25 10:25:19 lockner Exp $
+// $Id: RootTupleMaker.cc,v 1.7 2008/11/26 09:30:35 lockner Exp $
 //
 //
 
@@ -134,6 +134,8 @@ class RootTupleMaker : public edm::EDAnalyzer {
   Float_t              eleNumTrkIso[MAXELECTRONS];
   Float_t              eleEcalIso[MAXELECTRONS];
   Float_t              eleHcalIso[MAXELECTRONS];
+  Float_t              eleEcalRecHitIso[MAXELECTRONS];
+  Float_t              eleTowerIso[MAXELECTRONS];
   Int_t                eleClassif[MAXELECTRONS];
 
   // GenJets
@@ -345,16 +347,33 @@ RootTupleMaker::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
   //Isolation collections
   //trkiso ( EgammaElectronTkIsolationProducer )
   edm::Handle< reco::CandViewDoubleAssociations > trkIsolationHandle;
-  iEvent.getByLabel("egammaElectronTkRelIsolation",trkIsolationHandle);
+  iEvent.getByLabel("egammaElectronTkIsolation",trkIsolationHandle);
+  const CandViewDoubleAssociations* trkIsolation = trkIsolationHandle.failedToGet () ? 0 : &*trkIsolationHandle;
+
   //numtrksio ( EgammaElectronTkNumIsolationProducer )
   edm::Handle< reco::CandViewDoubleAssociations > trkNumIsolationHandle;
   iEvent.getByLabel("egammaElectronTkNumIsolation",trkNumIsolationHandle);
+  const CandViewDoubleAssociations* trkNumIsolation = trkNumIsolationHandle.failedToGet () ? 0 : &*trkNumIsolationHandle;
+
   //ecaliso ( EgammaEcalRecHitIsolationProducer )
-  edm::Handle< reco::CandViewDoubleAssociations > ecalIsolationHandle;
-  iEvent.getByLabel("egammaEcalRecHitIsolation",ecalIsolationHandle);
+  edm::Handle< reco::CandViewDoubleAssociations > ecalRecHitIsolationHandle;
+  iEvent.getByLabel("egammaEcalRecHitIsolation",ecalRecHitIsolationHandle);
+  const CandViewDoubleAssociations* ecalRecHitIsolation = ecalRecHitIsolationHandle.failedToGet () ? 0 : &*ecalRecHitIsolationHandle;
+
   //hcaliso ( EgammaHcalIsolationProducer )
   edm::Handle< reco::CandViewDoubleAssociations > hcalIsolationHandle;
   iEvent.getByLabel("egammaHcalIsolation",hcalIsolationHandle);
+  const CandViewDoubleAssociations* hcalIsolation = hcalIsolationHandle.failedToGet () ? 0 : &*hcalIsolationHandle;
+
+  //ecaliso ( EgammaEcalIsolationProducer ) for AOD
+  edm::Handle< reco::CandViewDoubleAssociations > ecalIsolationHandle;
+  iEvent.getByLabel("egammaEcalIsolation",ecalIsolationHandle);
+  const CandViewDoubleAssociations* ecalIsolation = ecalIsolationHandle.failedToGet () ? 0 : &*ecalIsolationHandle;
+
+  //hcaliso ( EgammaTowerIsolationProducer ) for AOD
+  edm::Handle< reco::CandViewDoubleAssociations > towerIsolationHandle;
+  iEvent.getByLabel("egammaTowerIsolation",towerIsolationHandle);
+  const CandViewDoubleAssociations* towerIsolation = towerIsolationHandle.failedToGet () ? 0 : &*towerIsolationHandle;
 
 
   /// sort electrons
@@ -434,31 +453,42 @@ RootTupleMaker::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
  
       //////////Iso variables
 
+      double trkIso = -99;
+      double trkNumIso = -99;
+      double ecalRecHitIso = -99;
+      double hcalIso = -99;
+      double ecalIso = -99;
+      double towerIso = -99;
+
       // this retrieves the index in the original collection associated to the reference to electron
       int index = (*electron).second;
 
-      double trkIso = (*trkIsolationHandle)[index].second; 
-      double trkNumIso = (*trkNumIsolationHandle)[index].second; 
-      double ecalIso = (*ecalIsolationHandle)[index].second;
-      double hcalIso = (*hcalIsolationHandle)[index].second;
-      
-      // Set variables in RootNtuple
+      if (trkIsolation) trkIso =(*trkIsolation)[index].second;
+      if (trkNumIsolation) trkNumIso = (*trkNumIsolation)[index].second; 
+      if (ecalRecHitIsolation) ecalRecHitIso =(*ecalRecHitIsolation)[index].second;
+      if (hcalIsolation) hcalIso =(*hcalIsolation)[index].second;
+      if (ecalIsolation) ecalIso =(*ecalIsolation)[index].second;
+      if (towerIsolation) towerIso =(*towerIsolation)[index].second;
+
+     // Set variables in RootNtuple
       eleEta[eleCount]=(*electron).first->eta();
       elePhi[eleCount]=(*electron).first->phi();
       elePt[eleCount]=(*electron).first->pt();
       eleEnergy[eleCount]=(*electron).first->energy();
       eleCaloEnergy[eleCount]=(*electron).first->caloEnergy();
 
-       eleHoE[eleCount]=hOverE;
-       eleSigmaEE[eleCount]=sigmaee;
-       eleDeltaPhiTrkSC[eleCount]=deltaPhiIn;
-       eleDeltaEtaTrkSC[eleCount]=deltaEtaIn;
-      
+      eleHoE[eleCount]=hOverE;
+      eleSigmaEE[eleCount]=sigmaee;
+      eleDeltaPhiTrkSC[eleCount]=deltaPhiIn;
+      eleDeltaEtaTrkSC[eleCount]=deltaEtaIn;
+      eleClassif[eleCount]=classif;
+
       eleTrkIso[eleCount]=trkIso;
       eleNumTrkIso[eleCount]=trkNumIso;
-      eleEcalIso[eleCount]=ecalIso;
+      eleEcalRecHitIso[eleCount]=ecalRecHitIso;
       eleHcalIso[eleCount]=hcalIso;
-      eleClassif[eleCount]=classif;
+      eleEcalIso[eleCount]=ecalIso;
+      eleTowerIso[eleCount]=towerIso;
 
       //go to next electron
       eleCount++;
@@ -784,6 +814,8 @@ RootTupleMaker::beginJob(const edm::EventSetup&)
   m_tree->Branch("eleTrkIso",&eleTrkIso,"eleTrkIso[eleCount]/F");
   m_tree->Branch("eleNumTrkIso",&eleNumTrkIso,"eleNumTrkIso[eleCount]/F");
   m_tree->Branch("eleEcalIso",&eleEcalIso,"eleEcalIso[eleCount]/F");
+  m_tree->Branch("eleTowerIso",&eleTowerIso,"eleTowerIso[eleCount]/F");
+  m_tree->Branch("eleEcalRecHitIso",&eleEcalRecHitIso,"eleEcalRecHitIso[eleCount]/F");
   m_tree->Branch("eleHcalIso",&eleHcalIso,"eleHcalIso[eleCount]/F");
   m_tree->Branch("eleClassif",&eleClassif,"eleClassif[eleCount]/I");
 
