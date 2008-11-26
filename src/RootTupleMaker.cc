@@ -13,7 +13,7 @@
 //
 // Original Author:  Ellie Lockner
 //         Created:  Tue Oct 21 13:56:04 CEST 2008
-// $Id: RootTupleMaker.cc,v 1.7 2008/11/26 09:30:35 lockner Exp $
+// $Id: RootTupleMaker.cc,v 1.8 2008/11/26 14:52:10 lockner Exp $
 //
 //
 
@@ -277,13 +277,19 @@ RootTupleMaker::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
   //using HepMCProduct
 
   // work in CSA08 RECO //////////////////////////////////
-    Handle<HepMCProduct> mc;
-    iEvent.getByLabel("source", mc );
-    const HepMC::GenEvent *genEvt = mc->GetEvent();
-    int processID = genEvt->signal_process_id();
-    double pthat = genEvt->event_scale(); 
+    Handle<HepMCProduct> mcHandle;
+    iEvent.getByLabel("source", mcHandle );
+    const HepMCProduct* mcCollection = mcHandle.failedToGet () ? 0 : &*mcHandle;
+    
+    int processID = -99;
+    double pthat = -99;
+    if (mcCollection) {
+      const HepMC::GenEvent *genEvt = mcCollection->GetEvent();
+      processID = genEvt->signal_process_id();
+      pthat = genEvt->event_scale(); 
 //     cout << processID << endl;
 //     cout << pthat << endl;
+    }
     m_processID = processID;
     m_pthat = pthat;
 
