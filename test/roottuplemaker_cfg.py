@@ -9,11 +9,11 @@ process.load("FWCore.MessageService.MessageLogger_cfi")
 # if you run over many samples ans you save the log remember to reduce
 # the size of the output by prescaling the report of the event number
 process.load("FWCore.MessageLogger.MessageLogger_cfi")
-process.MessageLogger.cerr.default.limit = 100
-process.MessageLogger.cerr.FwkReport.reportEvery = 100
+process.MessageLogger.cerr.default.limit = 1
+#process.MessageLogger.cerr.FwkReport.reportEvery = 100
 #################################################################
 
-process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(-1) )
+process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(10) )
 
 process.source = cms.Source("PoolSource",
     fileNames = cms.untracked.vstring(
@@ -45,13 +45,20 @@ process.treeCreator.saveTrigger     = cms.untracked.bool(True)
 ######## electron isolation  ########
 process.load("Configuration.StandardSequences.Geometry_cff")
 process.load("Geometry.CaloEventSetup.CaloTopology_cfi")
-process.load("EgammaAnalysis.EgammaIsolationProducers.egammaElectronTkIsolation_cfi")
+process.load("EgammaAnalysis.EgammaIsolationProducers.egammaElectronTkRelIsolation_cfi")
 process.load("EgammaAnalysis.EgammaIsolationProducers.egammaElectronTkNumIsolation_cfi")
 process.load("EgammaAnalysis.EgammaIsolationProducers.egammaEcalRecHitIsolation_cfi")
-#process.load("EgammaAnalysis.EgammaIsolationProducers.egammaEcalRelIsolationSequence_cff")
+process.load("EgammaAnalysis.EgammaIsolationProducers.egammaHcalIsolation_cfi")
 
-#process.egammaEcalRecHitIsolation.extRadius = cms.double(0.3)
-#process.egammaEcalRecHitIsolation.etMin = cms.double(0.)
+process.egammaEcalRecHitIsolation.extRadius = cms.double(0.3)
+process.egammaEcalRecHitIsolation.etMin = cms.double(0.)
+
+#process.egammaElectronTkRelIsolation.trackProducer = cms.InputTag("gsWithMaterialTracks")
+process.egammaElectronTkRelIsolation.ptMin = cms.double(1.5)
+process.egammaElectronTkRelIsolation.intRadius = cms.double(0.02)
+process.egammaElectronTkRelIsolation.extRadius = cms.double(0.2)
+process.egammaElectronTkRelIsolation.maxVtxDist = cms.double(0.1)
+
 
 #############   Define the L2 correction service #####
 process.L2RelativeJetCorrector = cms.ESSource("L2RelativeCorrectionService", 
@@ -96,6 +103,8 @@ process.L2L3L5CorJet = cms.EDProducer("CaloJetCorrectionProducer",
 ##process.p = cms.Path(process.L2L3CorJet * process.treeCreator)
 #process.p = cms.Path(process.L2L3L5CorJet * process.L2L3CorJet * process.egammaIsolationSequence * process.treeCreator)
 process.p = cms.Path(process.L2L3L5CorJet * process.L2L3CorJet
-                       * process.egammaElectronTkIsolation * process.egammaEcalRecHitIsolation * process.egammaElectronTkNumIsolation
-                       * process.treeCreator)
+                     * process.egammaElectronTkRelIsolation * process.egammaElectronTkNumIsolation
+                     * process.egammaEcalRecHitIsolation
+                     * process.egammaHcalIsolation
+                     * process.treeCreator)
 
