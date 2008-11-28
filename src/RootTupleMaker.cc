@@ -13,7 +13,7 @@
 //
 // Original Author:  Ellie Lockner
 //         Created:  Tue Oct 21 13:56:04 CEST 2008
-// $Id: RootTupleMaker.cc,v 1.8 2008/11/26 14:52:10 lockner Exp $
+// $Id: RootTupleMaker.cc,v 1.9 2008/11/26 15:13:03 lockner Exp $
 //
 //
 
@@ -132,10 +132,10 @@ class RootTupleMaker : public edm::EDAnalyzer {
 
   Float_t              eleTrkIso[MAXELECTRONS];
   Float_t              eleNumTrkIso[MAXELECTRONS];
-  Float_t              eleEcalIso[MAXELECTRONS];
-  Float_t              eleHcalIso[MAXELECTRONS];
+  Float_t              eleReducedEcalIso[MAXELECTRONS];
+  Float_t              eleHcalRecHitIso[MAXELECTRONS];
   Float_t              eleEcalRecHitIso[MAXELECTRONS];
-  Float_t              eleTowerIso[MAXELECTRONS];
+  Float_t              eleHcalTowerIso[MAXELECTRONS];
   Int_t                eleClassif[MAXELECTRONS];
 
   // GenJets
@@ -371,10 +371,10 @@ RootTupleMaker::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
   iEvent.getByLabel("egammaHcalIsolation",hcalIsolationHandle);
   const CandViewDoubleAssociations* hcalIsolation = hcalIsolationHandle.failedToGet () ? 0 : &*hcalIsolationHandle;
 
-  //ecaliso ( EgammaEcalIsolationProducer ) for AOD
-  edm::Handle< reco::CandViewDoubleAssociations > ecalIsolationHandle;
-  iEvent.getByLabel("egammaEcalIsolation",ecalIsolationHandle);
-  const CandViewDoubleAssociations* ecalIsolation = ecalIsolationHandle.failedToGet () ? 0 : &*ecalIsolationHandle;
+  //ecaliso ( EgammareducedEcalRecHitIsolationProducer ) for AOD
+  edm::Handle< reco::CandViewDoubleAssociations > reducedEcalIsolationHandle;
+  iEvent.getByLabel("reducedEcalRecHitIsolation",reducedEcalIsolationHandle);
+  const CandViewDoubleAssociations* reducedEcalIsolation = reducedEcalIsolationHandle.failedToGet () ? 0 : &*reducedEcalIsolationHandle;
 
   //hcaliso ( EgammaTowerIsolationProducer ) for AOD
   edm::Handle< reco::CandViewDoubleAssociations > towerIsolationHandle;
@@ -463,7 +463,7 @@ RootTupleMaker::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
       double trkNumIso = -99;
       double ecalRecHitIso = -99;
       double hcalIso = -99;
-      double ecalIso = -99;
+      double reducedEcalRecHitIso = -99;
       double towerIso = -99;
 
       // this retrieves the index in the original collection associated to the reference to electron
@@ -473,7 +473,7 @@ RootTupleMaker::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
       if (trkNumIsolation) trkNumIso = (*trkNumIsolation)[index].second; 
       if (ecalRecHitIsolation) ecalRecHitIso =(*ecalRecHitIsolation)[index].second;
       if (hcalIsolation) hcalIso =(*hcalIsolation)[index].second;
-      if (ecalIsolation) ecalIso =(*ecalIsolation)[index].second;
+      if (reducedEcalIsolation) reducedEcalRecHitIso =(*reducedEcalIsolation)[index].second;
       if (towerIsolation) towerIso =(*towerIsolation)[index].second;
 
      // Set variables in RootNtuple
@@ -492,9 +492,9 @@ RootTupleMaker::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
       eleTrkIso[eleCount]=trkIso;
       eleNumTrkIso[eleCount]=trkNumIso;
       eleEcalRecHitIso[eleCount]=ecalRecHitIso;
-      eleHcalIso[eleCount]=hcalIso;
-      eleEcalIso[eleCount]=ecalIso;
-      eleTowerIso[eleCount]=towerIso;
+      eleHcalRecHitIso[eleCount]=hcalIso;
+      eleReducedEcalIso[eleCount]=reducedEcalRecHitIso;
+      eleHcalTowerIso[eleCount]=towerIso;
 
       //go to next electron
       eleCount++;
@@ -819,10 +819,10 @@ RootTupleMaker::beginJob(const edm::EventSetup&)
 
   m_tree->Branch("eleTrkIso",&eleTrkIso,"eleTrkIso[eleCount]/F");
   m_tree->Branch("eleNumTrkIso",&eleNumTrkIso,"eleNumTrkIso[eleCount]/F");
-  m_tree->Branch("eleEcalIso",&eleEcalIso,"eleEcalIso[eleCount]/F");
-  m_tree->Branch("eleTowerIso",&eleTowerIso,"eleTowerIso[eleCount]/F");
+  m_tree->Branch("eleReducedEcalIso",&eleReducedEcalIso,"eleReducedEcalIso[eleCount]/F");
+  m_tree->Branch("eleHcalTowerIso",&eleHcalTowerIso,"eleHcalTowerIso[eleCount]/F");
   m_tree->Branch("eleEcalRecHitIso",&eleEcalRecHitIso,"eleEcalRecHitIso[eleCount]/F");
-  m_tree->Branch("eleHcalIso",&eleHcalIso,"eleHcalIso[eleCount]/F");
+  m_tree->Branch("eleHcalRecHitIso",&eleHcalRecHitIso,"eleHcalRecHitIso[eleCount]/F");
   m_tree->Branch("eleClassif",&eleClassif,"eleClassif[eleCount]/I");
 
   m_tree->Branch("genJetCount",&genJetCount,"genJetCount/I");
