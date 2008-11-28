@@ -1,5 +1,5 @@
 Check out this package from CVS to your CMSSW_2_1_8/src directory: 
->cvs co -d Leptoquarks/RootTupleMaker UserCode/Leptoquarks/RootTupleMaker
+>cvs co -d Leptoquarks/RootTupleMaker -r V00-00-06 UserCode/Leptoquarks/RootTupleMaker
 
 Check out the packages needed for Jet Corrections:
 >cvs co -r V01-06-05 CondFormats/JetMETObjects
@@ -16,9 +16,7 @@ Compile:
 >scram b
 
 Change the file name in roottuplemaker_cfg.py to point to your input file.
-Change the processes in the out path (at the bottom) based on what type of data file you are running over.
-For RECO comment out the egammaEcalIsolation.
-For AOD comment out the egammaEcalRecHitIsolation and the egaamaHcalIsolation.
 
 Run the RootTupleMaker:
->cmsRun roottuplemaker_cfg.py
+>cmsRun roottuplemaker_XXX_cfg.py
+where XXX is either RECO or AOD, depending on your data file to be run over.
