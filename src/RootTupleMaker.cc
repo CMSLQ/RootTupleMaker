@@ -13,7 +13,7 @@
 //
 // Original Author:  Ellie Lockner
 //         Created:  Tue Oct 21 13:56:04 CEST 2008
-// $Id: RootTupleMaker.cc,v 1.9 2008/11/26 15:13:03 lockner Exp $
+// $Id: RootTupleMaker.cc,v 1.10 2008/11/28 14:19:24 lockner Exp $
 //
 //
 
@@ -286,13 +286,22 @@ RootTupleMaker::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
     if (mcCollection) {
       const HepMC::GenEvent *genEvt = mcCollection->GetEvent();
       processID = genEvt->signal_process_id();
-      pthat = genEvt->event_scale(); 
+//       pthat = genEvt->event_scale(); 
+    }
+
+    
+  edm::Handle<reco::PdfInfo> pdfHandle;
+  iEvent.getByLabel("genEventPdfInfo",pdfHandle);
+  const PdfInfo* pdfCollection = pdfHandle.failedToGet () ? 0 : &*pdfHandle;
+  if (pdfCollection){
+    pthat = pdfCollection->scalePDF;
+  }
+
+  m_processID = processID;
+  m_pthat = pthat;
+
 //     cout << processID << endl;
 //     cout << pthat << endl;
-    }
-    m_processID = processID;
-    m_pthat = pthat;
-
 
   //using genEvent products
 
