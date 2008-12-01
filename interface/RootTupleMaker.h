@@ -32,6 +32,9 @@
 #include "TFile.h"
 #include "TTree.h"
 
+//Event info
+#include "DataFormats/HepMCCandidate/interface/PdfInfo.h"
+
 // GenParticle stuff
 #include "DataFormats/HepMCCandidate/interface/GenParticle.h"
 
