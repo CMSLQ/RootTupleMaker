@@ -19,6 +19,8 @@ process.source = cms.Source("PoolSource",
     fileNames = cms.untracked.vstring(
        #'file:/home/lockner/Data/Summer08_Bkgnd/QCD_AOD.root'     # AOD (QCD)
        'file:/home/santanas/Data/C81A2D83-ED9A-DD11-98F1-0015C5E59E7F.root'  #FULLSIM RECO (QCD)
+       #'file:/home/lockner/Data/Summer08_Bkgnd/new_TTbar_madgraph.root'  #FULLSIM RECO (TTbar)
+       #'file:/home/lockner/Data/Summer08_Bkgnd/Zjet_Madgraph_RECO.root'  #FULLSIM RECO (Z+jets)
     )
 )
 
@@ -61,6 +63,11 @@ process.egammaElectronTkNumIsolation.intRadius = cms.double(0.02)
 process.egammaElectronTkNumIsolation.extRadius = cms.double(0.2)
 process.egammaElectronTkNumIsolation.maxVtxDist = cms.double(0.1)
 
+process.egammaEcalRecHitIsolation.extRadius = cms.double(0.3)
+process.egammaEcalRecHitIsolation.useIsolEt = cms.bool(True)
+process.egammaHcalIsolation.useIsolEt = cms.bool(True)
+process.egammaTowerIsolation.useIsolEt = cms.bool(True)
+
 process.reducedEcalRecHitIsolation = cms.EDProducer("EgammaEcalRecHitIsolationProducer",
     absolut = cms.bool(True),
     ecalBarrelRecHitProducer = cms.InputTag("reducedEcalRecHitsEB"),
@@ -68,7 +75,7 @@ process.reducedEcalRecHitIsolation = cms.EDProducer("EgammaEcalRecHitIsolationPr
     intRadius = cms.double(0.0),
     ecalEndcapRecHitProducer = cms.InputTag("reducedEcalRecHitsEE"),
     extRadius = cms.double(0.3),
-    useIsolEt = cms.bool(False),
+    useIsolEt = cms.bool(True),
     ecalBarrelRecHitCollection = cms.InputTag(""),
     etMin = cms.double(0.0),
     emObjectProducer = cms.InputTag("pixelMatchGsfElectrons")
