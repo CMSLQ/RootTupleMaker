@@ -13,7 +13,7 @@
 //
 // Original Author:  Ellie Lockner
 //         Created:  Tue Oct 21 13:56:04 CEST 2008
-// $Id: RootTupleMaker.cc,v 1.10 2008/11/28 14:19:24 lockner Exp $
+// $Id: RootTupleMaker.cc,v 1.11 2008/12/01 17:59:28 lockner Exp $
 //
 //
 
@@ -56,6 +56,8 @@ class RootTupleMaker : public edm::EDAnalyzer {
 
   void SetTriggers(const edm::Event& iEvent);
 
+  bool Skim1st2ndGenLQ(const edm::View<reco::Candidate> *emObjectHandle, const reco::MuonCollection muonCollection);
+
   int singleEleRelHLTCounter;
   int muonHLTCounter;
 
@@ -76,10 +78,19 @@ class RootTupleMaker : public edm::EDAnalyzer {
   bool                 saveTrigger_;
   int                  prescaleSingleEleRel_;
   int                  prescaleMuon_;
+  bool                 useSkim1st2ndGenLQ_;
+  double               skim1st2ndGenLQpTEle_;
+  double               skim1st2ndGenLQpTMu_; 
+
 
  //Output RootNtuple
   TTree *              m_tree;
   TFile *              m_file;
+
+  TTree *              m_tree2;
+
+  //Global info
+  int                  Nstart;
 
   // Event info
   int                  event;
@@ -226,12 +237,18 @@ RootTupleMaker::RootTupleMaker(const edm::ParameterSet& iConfig)
   prescaleSingleEleRel_  = iConfig.getUntrackedParameter<int>("prescaleSingleEleRel",30); 
   prescaleMuon_          = iConfig.getUntrackedParameter<int>("prescaleMuon",30);
 
+  useSkim1st2ndGenLQ_       = iConfig.getUntrackedParameter<bool>("useSkim1st2ndGenLQ",0);
+  skim1st2ndGenLQpTEle_  = iConfig.getUntrackedParameter<double>("skim1st2ndGenLQpTEle",30);
+  skim1st2ndGenLQpTMu_  = iConfig.getUntrackedParameter<double>("skim1st2ndGenLQpTMu",30);
+
+
   //Initialize some variables
   singleEleRelHLTCounter=0;
   muonHLTCounter=0;
 
   event=-999;
   runnum=-999;
+  Nstart=0;
 
   m_cross_section=-999.;
   m_auto_cross_section=-999.;
@@ -266,7 +283,10 @@ RootTupleMaker::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 
   if(debug_==true)
     cout << "Analyze " << endl;
-   
+  
+  // Count number of events analyzed
+  Nstart++;
+
   // Fill Event info
 
   event = iEvent.id().event();
@@ -761,17 +781,26 @@ RootTupleMaker::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
     } 
 
   //////////////////////////////////////////////////////////////////////////////////////////////
-      //  Fill tree for each event
-      //  ********************************************************
-      //  ********************************************************
-      
-      if(debug_==true)
-	cout << "About to fill tree" << endl;
-      m_tree->Fill();
-      
-      //  ********************************************************
-      //  ********************************************************
 
+  //  Fill tree for each event
+  //  ********************************************************
+  //  ********************************************************
+  if(debug_==true)
+    cout << "About to fill tree" << endl;
+  
+  if( useSkim1st2ndGenLQ_ )
+    {//fill only events passing skim
+      if( Skim1st2ndGenLQ(emObjectHandle,muonColl) )
+	m_tree->Fill();
+    }
+  else if( !useSkim1st2ndGenLQ_)
+    {//fill all
+      m_tree->Fill();
+    }
+  
+  //  ********************************************************
+  //  ********************************************************
+  
 }
 
 
@@ -782,6 +811,11 @@ RootTupleMaker::beginJob(const edm::EventSetup&)
   m_file = new TFile(rootfile_.c_str(),"RECREATE");
   m_tree = NULL;
   m_tree = new TTree ("RootTupleMaker","RootTupleMaker") ;
+
+  m_tree2 = NULL;
+  m_tree2 = new TTree ("RootTupleMaker_globalInfo","RootTupleMaker_globalInfo") ;
+
+  m_tree2->Branch("Nstart",&Nstart,"Nstart/I");
 
   m_tree->Branch("event",&event,"event/I");
   m_tree->Branch("run",&runnum,"runnum/I");
@@ -965,6 +999,79 @@ void RootTupleMaker::SetTriggers(const edm::Event& iEvent)
 
 }
 
+////====================================================================
+bool RootTupleMaker::Skim1st2ndGenLQ(const edm::View<reco::Candidate> *eleCollection, const reco::MuonCollection muonCollection)
+{
+////====================================================================
+
+//   cout << "skim1st2ndGenLQpTMu_ : " << skim1st2ndGenLQpTMu_  << endl;
+//   cout << "skim1st2ndGenLQpTEle_ : " << skim1st2ndGenLQpTEle_  << endl;
+
+  int ne = 0;
+  int nmu = 0;
+  int nl = 0;
+
+  reco::MuonCollection::const_iterator muon;
+  for(muon=muonCollection.begin(); muon!=muonCollection.end(); muon++) 
+    {
+      //skip if muon is not global
+      if(!muon->isGlobalMuon())
+	continue;
+
+      //      cout << "muon->pt(): " << muon->pt() << endl;
+
+      if( muon->pt() > skim1st2ndGenLQpTMu_ 
+	  || ( muon->pt() > skim1st2ndGenLQpTMu_ && nmu>=1 ) )
+	nmu++;
+    }
+  
+  for(int elecand_idx = 0; elecand_idx < (int)eleCollection->size(); elecand_idx++) 
+    {
+      const PixelMatchGsfElectronRef electron = eleCollection->refAt(elecand_idx).castTo<PixelMatchGsfElectronRef>();
+      //      cout << "electron->pt(): " << electron->pt() << endl;
+      const reco::SuperClusterRef& SCref = electron->superCluster();  	        
+
+      //## Remove electrons associated to the same SC ##
+      bool IsCopy=false;      
+      
+      for(int elecand_idx1 = 0; elecand_idx1 < (int)eleCollection->size(); elecand_idx1++) 
+	{
+	  const PixelMatchGsfElectronRef electron1 = eleCollection->refAt(elecand_idx1).castTo<PixelMatchGsfElectronRef>();
+
+	  if(elecand_idx1<=elecand_idx)
+	    continue;
+	  
+	  const reco::SuperClusterRef& SCref1 = electron1->superCluster();  	  
+	  
+  	  if( SCref == SCref1 )
+  	    {
+  	      IsCopy=true;
+  	      break;
+  	    }
+  	}
+
+      //skip this electron 
+      if(IsCopy==true)
+	continue;
+
+      //## end remove electrons associated to the same SC
+      
+      if( electron->pt() > skim1st2ndGenLQpTEle_ 
+	  || ( electron->pt() > skim1st2ndGenLQpTEle_ && ne>=1 ) )
+	ne++;
+    }
+
+  nl = ne + nmu;
+  
+  if(nl>=2)
+    return true;
+  else
+    return false;
+
+}
+
+
+
 // ------------ method called once each job just after ending the event loop  ------------
 void 
 RootTupleMaker::endJob() {
@@ -972,12 +1079,23 @@ RootTupleMaker::endJob() {
     cout << "Before write tree" << endl;
   
   m_file = m_tree->GetCurrentFile();
-  Int_t ret = m_file->Write();
   
   if(debug_==true)
-    cout << "Tree saved." << ret <<  endl;
+    cout << "Before fill tree with global info" << endl;
+
+  //  cout << "Nstart: " << Nstart << endl;
+
+  m_tree2->Fill();
+
+  if(debug_==true)
+    cout << "Tree with global info filled" << endl;
+
+  Int_t ret = m_file->Write();
+  if(debug_==true)
+    cout << "Both trees saved." << ret <<  endl;
 
   m_file->Close();
+
 }
 
 

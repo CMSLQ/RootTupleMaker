@@ -40,6 +40,10 @@ process.treeCreator.luminosity      =  cms.untracked.double(100)
 process.treeCreator.numEvents       = cms.untracked.int32(10)
 process.treeCreator.saveTrigger     = cms.untracked.bool(True)
 
+process.treeCreator.useSkim1st2ndGenLQ = cms.untracked.bool(True)
+process.treeCreator.skim1st2ndGenLQpTEle  =  cms.untracked.double(20)
+process.treeCreator.skim1st2ndGenLQpTMu  =  cms.untracked.double(20)
+
 ######## electron isolation  ########
 process.load("Configuration.StandardSequences.Geometry_cff")
 process.load("Geometry.CaloEventSetup.CaloTopology_cfi")

@@ -10,16 +10,16 @@ process.load("FWCore.MessageService.MessageLogger_cfi")
 # the size of the output by prescaling the report of the event number
 process.load("FWCore.MessageLogger.MessageLogger_cfi")
 process.MessageLogger.cerr.default.limit = 100
-process.MessageLogger.cerr.FwkReport.reportEvery = 100
+process.MessageLogger.cerr.FwkReport.reportEvery = 1
 #################################################################
 
-process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(-1) )
+process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(1000) )
 
 process.source = cms.Source("PoolSource",
     fileNames = cms.untracked.vstring(
        #'file:/home/lockner/Data/Summer08_Bkgnd/QCD_AOD.root'     # AOD (QCD)
-       'file:/home/santanas/Data/C81A2D83-ED9A-DD11-98F1-0015C5E59E7F.root'  #FULLSIM RECO (QCD)
-       #'file:/home/lockner/Data/Summer08_Bkgnd/new_TTbar_madgraph.root'  #FULLSIM RECO (TTbar)
+       #'file:/home/santanas/Data/C81A2D83-ED9A-DD11-98F1-0015C5E59E7F.root'  #FULLSIM RECO (QCD)
+       'file:/home/lockner/Data/Summer08_Bkgnd/new_TTbar_madgraph.root'  #FULLSIM RECO (TTbar)
        #'file:/home/lockner/Data/Summer08_Bkgnd/Zjet_Madgraph_RECO.root'  #FULLSIM RECO (Z+jets)
     )
 )
@@ -41,6 +41,10 @@ process.treeCreator.debug           = cms.untracked.bool(False)
 process.treeCreator.luminosity      =  cms.untracked.double(100)
 process.treeCreator.numEvents       = cms.untracked.int32(10)
 process.treeCreator.saveTrigger     = cms.untracked.bool(True)
+
+process.treeCreator.useSkim1st2ndGenLQ = cms.untracked.bool(True)
+process.treeCreator.skim1st2ndGenLQpTEle  =  cms.untracked.double(20)
+process.treeCreator.skim1st2ndGenLQpTMu  =  cms.untracked.double(20)
 
 ######## electron isolation  ########
 process.load("Configuration.StandardSequences.Geometry_cff")
