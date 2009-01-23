@@ -31,6 +31,7 @@
 #include "TH2.h"
 #include "TFile.h"
 #include "TTree.h"
+#include "TLorentzVector.h"
 
 //Event info
 #include "DataFormats/HepMCCandidate/interface/PdfInfo.h"

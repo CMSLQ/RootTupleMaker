@@ -10,7 +10,7 @@ process.load("FWCore.MessageService.MessageLogger_cfi")
 # the size of the output by prescaling the report of the event number
 process.load("FWCore.MessageLogger.MessageLogger_cfi")
 process.MessageLogger.cerr.default.limit = 100
-process.MessageLogger.cerr.FwkReport.reportEvery = 1
+process.MessageLogger.cerr.FwkReport.reportEvery = 100
 #################################################################
 
 process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(1000) )
@@ -19,15 +19,16 @@ process.source = cms.Source("PoolSource",
     fileNames = cms.untracked.vstring(
        #'file:/home/lockner/Data/Summer08_Bkgnd/QCD_AOD.root'     # AOD (QCD)
        #'file:/home/santanas/Data/C81A2D83-ED9A-DD11-98F1-0015C5E59E7F.root'  #FULLSIM RECO (QCD)
-       'file:/home/lockner/Data/Summer08_Bkgnd/new_TTbar_madgraph.root'  #FULLSIM RECO (TTbar)
-       #'file:/home/lockner/Data/Summer08_Bkgnd/Zjet_Madgraph_RECO.root'  #FULLSIM RECO (Z+jets)
+       #'file:/home/lockner/Data/Summer08_Bkgnd/new_TTbar_madgraph.root'  #FULLSIM RECO (TTbar)
+       'file:/home/lockner/Data/Summer08_Bkgnd/Zjet_Madgraph_RECO.root'  #FULLSIM RECO (Z+jets)
     )
 )
 
 process.treeCreator = cms.EDAnalyzer('RootTupleMaker'
 )
 
-process.treeCreator.rootfile        = cms.untracked.string("TTree.root")
+#process.treeCreator.rootfile        = cms.untracked.string("TTree_ZJet_3_jetThr10.root")
+process.treeCreator.rootfile        = cms.untracked.string("TTree_ZJet_3_debug4.root")
 process.treeCreator.maxgenparticles = cms.untracked.int32(50)
 process.treeCreator.maxgenjets      = cms.untracked.int32(10)
 process.treeCreator.maxelectrons    = cms.untracked.int32(10)
@@ -45,6 +46,8 @@ process.treeCreator.saveTrigger     = cms.untracked.bool(True)
 process.treeCreator.useSkim1st2ndGenLQ = cms.untracked.bool(True)
 process.treeCreator.skim1st2ndGenLQpTEle  =  cms.untracked.double(20)
 process.treeCreator.skim1st2ndGenLQpTMu  =  cms.untracked.double(20)
+process.treeCreator.skim1st2ndGenLQpTJet  =  cms.untracked.double(10)
+process.treeCreator.skim1st2ndGenLQDeltaRJetEle  =  cms.untracked.double(0.1)
 
 ######## electron isolation  ########
 process.load("Configuration.StandardSequences.Geometry_cff")

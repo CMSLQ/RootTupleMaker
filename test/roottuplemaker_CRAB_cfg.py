@@ -45,6 +45,8 @@ process.treeCreator.saveTrigger     = cms.untracked.bool(True)
 process.treeCreator.useSkim1st2ndGenLQ = cms.untracked.bool(True)
 process.treeCreator.skim1st2ndGenLQpTEle  =  cms.untracked.double(20)
 process.treeCreator.skim1st2ndGenLQpTMu  =  cms.untracked.double(20)
+process.treeCreator.skim1st2ndGenLQpTJet  =  cms.untracked.double(10)
+process.treeCreator.skim1st2ndGenLQDeltaRJetEle  =  cms.untracked.double(0.1)
 
 ######## electron isolation  ########
 process.load("Configuration.StandardSequences.Geometry_cff")

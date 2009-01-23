@@ -13,7 +13,7 @@
 //
 // Original Author:  Ellie Lockner
 //         Created:  Tue Oct 21 13:56:04 CEST 2008
-// $Id: RootTupleMaker.cc,v 1.11 2008/12/01 17:59:28 lockner Exp $
+// $Id: RootTupleMaker.cc,v 1.12 2009/01/22 09:34:55 santanas Exp $
 //
 //
 
@@ -56,7 +56,9 @@ class RootTupleMaker : public edm::EDAnalyzer {
 
   void SetTriggers(const edm::Event& iEvent);
 
-  bool Skim1st2ndGenLQ(const edm::View<reco::Candidate> *emObjectHandle, const reco::MuonCollection muonCollection);
+  bool Skim1st2ndGenLQ(const edm::View<reco::Candidate> *emObjectHandle, 
+		       const reco::MuonCollection muonCollection, 
+		       const edm::Handle<reco::CaloJetCollection>);
 
   int singleEleRelHLTCounter;
   int muonHLTCounter;
@@ -81,7 +83,8 @@ class RootTupleMaker : public edm::EDAnalyzer {
   bool                 useSkim1st2ndGenLQ_;
   double               skim1st2ndGenLQpTEle_;
   double               skim1st2ndGenLQpTMu_; 
-
+  double               skim1st2ndGenLQpTJet_; 
+  double               skim1st2ndGenLQDeltaRJetEle_;
 
  //Output RootNtuple
   TTree *              m_tree;
@@ -237,9 +240,11 @@ RootTupleMaker::RootTupleMaker(const edm::ParameterSet& iConfig)
   prescaleSingleEleRel_  = iConfig.getUntrackedParameter<int>("prescaleSingleEleRel",30); 
   prescaleMuon_          = iConfig.getUntrackedParameter<int>("prescaleMuon",30);
 
-  useSkim1st2ndGenLQ_       = iConfig.getUntrackedParameter<bool>("useSkim1st2ndGenLQ",0);
-  skim1st2ndGenLQpTEle_  = iConfig.getUntrackedParameter<double>("skim1st2ndGenLQpTEle",30);
-  skim1st2ndGenLQpTMu_  = iConfig.getUntrackedParameter<double>("skim1st2ndGenLQpTMu",30);
+  useSkim1st2ndGenLQ_       = iConfig.getUntrackedParameter<bool>("useSkim1st2ndGenLQ", 1);
+  skim1st2ndGenLQpTEle_  = iConfig.getUntrackedParameter<double>("skim1st2ndGenLQpTEle", 20);
+  skim1st2ndGenLQpTMu_  = iConfig.getUntrackedParameter<double>("skim1st2ndGenLQpTMu", 20);
+  skim1st2ndGenLQpTJet_  = iConfig.getUntrackedParameter<double>("skim1st2ndGenLQpTJet", 10);
+  skim1st2ndGenLQDeltaRJetEle_ = iConfig.getUntrackedParameter<double>("skim1st2ndGenLQDeltaRJetEle", 0.1);
 
 
   //Initialize some variables
@@ -593,8 +598,8 @@ RootTupleMaker::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
   edm::Handle<reco::CaloJetCollection> caloJetsIC5;
   iEvent.getByLabel ("L2L3L5CorJet", caloJetsIC5); 
 
-//   // get Jet Flavor corrector (L5)
-//   const JetCorrector* udsJetCorrector = JetCorrector::getJetCorrector (mUDSCorrectorName, iSetup);
+  //   // get Jet Flavor corrector (L5)
+  //   const JetCorrector* udsJetCorrector = JetCorrector::getJetCorrector (mUDSCorrectorName, iSetup);
 
   caloJetIC5Count=0;
   for( CaloJetCollection::const_iterator calojet = caloJetsIC5->begin(); calojet != caloJetsIC5->end(); calojet++ ) 
@@ -602,7 +607,7 @@ RootTupleMaker::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
       //exit from loop when you reach the required number of electrons
       if(caloJetIC5Count > maxcalojets_)
 	break;
-     float EMF = calojet->emEnergyFraction();
+      float EMF = calojet->emEnergyFraction();
       float HADF = calojet->energyFractionHadronic();
 
       caloJetIC5Pt[caloJetIC5Count]=calojet->pt();
@@ -625,7 +630,7 @@ RootTupleMaker::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 
   if (PAT_){
     //probably have already L2,3 corrections, so need to grab correction factor
-}
+  }
 
   if(debug_==true)
     cout << "CaloJets filled" << endl;
@@ -706,13 +711,13 @@ RootTupleMaker::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
       /*
       if(fastSim_==1)
 	{
-	  //FastSim
-// 	  trkhits  = muon->track()->numberOfValidHits();
-// 	  trkd0    = muon->track()->d0();
-// 	  trkdz    = muon->track()->dz();
+	//FastSim
+	// 	  trkhits  = muon->track()->numberOfValidHits();
+	// 	  trkd0    = muon->track()->d0();
+	// 	  trkdz    = muon->track()->dz();
 	}
       */
-
+      
       if(muon->isGlobalMuon()){
 	
 	trkhits  = muon->globalTrack()->numberOfValidHits();
@@ -790,10 +795,14 @@ RootTupleMaker::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
   
   if( useSkim1st2ndGenLQ_ )
     {//fill only events passing skim
-      if( Skim1st2ndGenLQ(emObjectHandle,muonColl) )
+
+      edm::Handle<reco::CaloJetCollection> caloJetsIC5_raw_;
+      iEvent.getByLabel ("iterativeCone5CaloJets", caloJetsIC5_raw_); 
+
+      if( Skim1st2ndGenLQ(emObjectHandle, muonColl, caloJetsIC5_raw_) )
 	m_tree->Fill();
     }
-  else if( !useSkim1st2ndGenLQ_)
+  else if( !useSkim1st2ndGenLQ_ )
     {//fill all
       m_tree->Fill();
     }
@@ -1000,17 +1009,24 @@ void RootTupleMaker::SetTriggers(const edm::Event& iEvent)
 }
 
 ////====================================================================
-bool RootTupleMaker::Skim1st2ndGenLQ(const edm::View<reco::Candidate> *eleCollection, const reco::MuonCollection muonCollection)
+bool RootTupleMaker::Skim1st2ndGenLQ(const edm::View<reco::Candidate> *eleCollection, 
+				     const reco::MuonCollection muonCollection, 
+				     const edm::Handle<reco::CaloJetCollection> jetCollection)
 {
 ////====================================================================
 
 //   cout << "skim1st2ndGenLQpTMu_ : " << skim1st2ndGenLQpTMu_  << endl;
 //   cout << "skim1st2ndGenLQpTEle_ : " << skim1st2ndGenLQpTEle_  << endl;
+//   cout << "skim1st2ndGenLQpTJet_ : " << skim1st2ndGenLQpTJet_  << endl;
+//   cout << "skim1st2ndGenLQDeltaRJetEle_ : " << skim1st2ndGenLQDeltaRJetEle_  << endl;
+  
 
   int ne = 0;
   int nmu = 0;
   int nl = 0;
-
+  int nobj = 0;
+  
+  //muons
   reco::MuonCollection::const_iterator muon;
   for(muon=muonCollection.begin(); muon!=muonCollection.end(); muon++) 
     {
@@ -1018,17 +1034,21 @@ bool RootTupleMaker::Skim1st2ndGenLQ(const edm::View<reco::Candidate> *eleCollec
       if(!muon->isGlobalMuon())
 	continue;
 
-      //      cout << "muon->pt(): " << muon->pt() << endl;
+      //       cout << "muon->pt(): " << muon->pt() 
+      // 	   << "muon->eta(): " << muon->eta()  
+      // 	   << "muon->phi(): " << muon->phi() << endl;
 
-      if( muon->pt() > skim1st2ndGenLQpTMu_ 
-	  || ( muon->pt() > skim1st2ndGenLQpTMu_ && nmu>=1 ) )
-	nmu++;
+      if( muon->pt() > skim1st2ndGenLQpTMu_ ) 
+	{
+	  //	  || ( muon->pt() > skim1st2ndGenLQpTMu_ && nmu>=1 ) )
+	  nmu++;
+	}
     }
   
+  //electrons
   for(int elecand_idx = 0; elecand_idx < (int)eleCollection->size(); elecand_idx++) 
     {
       const PixelMatchGsfElectronRef electron = eleCollection->refAt(elecand_idx).castTo<PixelMatchGsfElectronRef>();
-      //      cout << "electron->pt(): " << electron->pt() << endl;
       const reco::SuperClusterRef& SCref = electron->superCluster();  	        
 
       //## Remove electrons associated to the same SC ##
@@ -1055,15 +1075,115 @@ bool RootTupleMaker::Skim1st2ndGenLQ(const edm::View<reco::Candidate> *eleCollec
 	continue;
 
       //## end remove electrons associated to the same SC
+
+      //       cout << "electron->pt(): " << electron->pt() 
+      // 	   << "electron->eta(): " << electron->eta() 
+      // 	   << "electron->phi(): " << electron->phi() << endl;
       
-      if( electron->pt() > skim1st2ndGenLQpTEle_ 
-	  || ( electron->pt() > skim1st2ndGenLQpTEle_ && ne>=1 ) )
-	ne++;
+      if( electron->pt() > skim1st2ndGenLQpTEle_) 
+	{
+	  //	  || ( electron->pt() > skim1st2ndGenLQpTEle_ && ne>=1 ) )
+	  ne++;
+	}
+
     }
 
+  //###
   nl = ne + nmu;
+  //###
+
+  //###
+  nobj = nl;
+  //###
+
+
+  //   //%%% DEBUG
+  //   int njtemp = 0;
+  //   bool PrintThis = false;
+  //   for( CaloJetCollection::const_iterator calojet = jetCollection->begin(); calojet != jetCollection->end(); calojet++ ) 
+  //     {
+  //       if( calojet->pt() > skim1st2ndGenLQpTJet_)
+  // 	njtemp++;
+  //     }
+  //   if(njtemp>=4 && ne>=2)
+  //     PrintThis = true;
+  //   //%%%
+
+
+  //jets
+  for( CaloJetCollection::const_iterator calojet = jetCollection->begin(); calojet != jetCollection->end(); calojet++ ) 
+    {
+      //       cout << "calojet->pt: " << calojet->pt() << endl;
+
+      if( calojet->pt() < skim1st2ndGenLQpTJet_)
+	continue;
+
+      TLorentzVector v_jet;
+      v_jet.SetPtEtaPhiE( calojet->pt(), calojet->eta(), calojet->phi(), calojet->energy() );
+
+      //       if(PrintThis){
+      //       cout << endl;
+      //       cout << "JET:" << endl;
+      //       cout << "pT: " << calojet->pt() << " eta: " <<  calojet->eta() << " phi: " <<  calojet->phi() << endl; 
+      //       }
+
+      bool CountIt = true;
+
+      for(int elecand_idx = 0; elecand_idx < (int)eleCollection->size(); elecand_idx++) 
+	{
+	  const PixelMatchGsfElectronRef electron = eleCollection->refAt(elecand_idx).castTo<PixelMatchGsfElectronRef>();
+
+	  if( electron->pt() < skim1st2ndGenLQpTEle_) 
+	    continue;
+
+	  TLorentzVector v_ele;
+	  v_ele.SetPtEtaPhiE( electron->pt(), electron->eta(), electron->phi(), electron->energy() );
+
+	  // 	  if(PrintThis){
+	  // 	    cout << "ELE: " << elecand_idx << endl;
+	  // 	    cout << "pT: " << electron->pt() << " eta: " <<  electron->eta() << " phi: " <<  electron->phi() << endl; 
+	  // 	  }
+	  
+	  float deltaR = v_jet.DeltaR(v_ele);
+
+	  // 	  if(PrintThis){
+	  // 	    cout << "---> deltaR(ele-jet) : " << deltaR << endl;
+	  // 	  }
+	  
+	  if( deltaR < skim1st2ndGenLQDeltaRJetEle_ )
+	    {
+	      CountIt = false;
+	      break;
+	    }
+	}
+
+      //skip this jet (already counted in the electron collection)
+      if(CountIt == false)
+	{
+	  // 	  if(PrintThis){
+	  // 	    cout << "=== skip jet" << endl;
+	  // 	  }
+	  continue;
+	}
+      else
+	{
+	  // 	  if(PrintThis){
+	  // 	    cout << "=== count jet" << endl;
+	  // 	  }
+	  nobj++;
+	}
+
+    }
+
+  //   if(PrintThis){
+  //     cout << "%% summary %%" << endl;
+  //     cout << "ne: " << ne << endl;
+  //     cout << "nmu: " << nmu << endl;
+  //     cout << "nl: " << nl << endl;
+  //     cout << "nobj: " << nobj << endl;
+  //   }  
   
-  if(nl>=2)
+  if( nl >= 2 && nobj >= 4)
     return true;
   else
     return false;

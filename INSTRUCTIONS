@@ -20,3 +20,7 @@ Change the file name in roottuplemaker_cfg.py to point to your input file.
 Run the RootTupleMaker:
 >cmsRun roottuplemaker_XXX_cfg.py
 where XXX is either RECO or AOD, depending on your data file to be run over.
+
+
+NOTE) Skims available:
+      - Skim1stendGenLQ (default, configurable by config file)
