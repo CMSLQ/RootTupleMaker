@@ -57,7 +57,8 @@
 // Muon stuff
 #include "DataFormats/MuonReco/interface/Muon.h"
 #include "DataFormats/MuonReco/interface/MuonFwd.h"
-#include "RecoMuon/MuonIdentification/interface/IdGlobalFunctions.h"
+//#include "RecoMuon/MuonIdentification/interface/IdGlobalFunctions.h"
+#include "DataFormats/MuonReco/interface/MuonSelectors.h"
 #include "DataFormats/TrackReco/interface/Track.h"
 
 //Electron stuff
