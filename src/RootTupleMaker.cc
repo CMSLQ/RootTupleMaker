@@ -13,7 +13,7 @@
 //
 // Original Author:  Ellie Lockner
 //         Created:  Tue Oct 21 13:56:04 CEST 2008
-// $Id: RootTupleMaker.cc,v 1.12 2009/01/22 09:34:55 santanas Exp $
+// $Id: RootTupleMaker.cc,v 1.13 2009/01/23 10:40:41 santanas Exp $
 //
 //
 
@@ -177,15 +177,11 @@ class RootTupleMaker : public edm::EDAnalyzer {
 
   // Muons
   Int_t                muonCount;
-  Int_t                muonGlobalCount;
-  Int_t                muonStandAloneCount;
-  Int_t                muonTrackerCount;
   Float_t              muonEta[MAXMUONS];
   Float_t              muonPhi[MAXMUONS];
   Float_t              muonPt[MAXMUONS];
   Float_t              muonEnergy[MAXMUONS];
   Int_t                muonCharge[MAXMUONS];
-  Float_t              muonEt[MAXMUONS];
   Float_t              muonTrkHits[MAXMUONS];
   Float_t              muonTrkD0[MAXMUONS];
   Float_t              muonTrkDz[MAXMUONS];
@@ -194,12 +190,12 @@ class RootTupleMaker : public edm::EDAnalyzer {
   Float_t              muonHcalIso[MAXMUONS];
   Float_t              muonHOIso[MAXMUONS];
   Float_t              muonGlobalChi2[MAXMUONS];
-  Float_t              muonStandAloneChi2[MAXMUONS];
-  Float_t              muonTrackerChi2[MAXMUONS];
 
   // MET 
   Float_t              genMET;
+  Float_t              genMETPhi;
   Float_t              MET;
+  Float_t              METPhi;
 
   // Parameters from cfg
   std::string mUDSCorrectorName;
@@ -263,7 +259,9 @@ RootTupleMaker::RootTupleMaker(const edm::ParameterSet& iConfig)
   m_weight=-999.;              
 
   genMET=-999.;
+  genMETPhi=-999.;
   MET=-999.;
+  METPhi=-999.;
 
 }
 
@@ -644,6 +642,7 @@ RootTupleMaker::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 
   const GenMET & genmet = (*genMETColl)[0];
   genMET = genmet.et();
+  genMETPhi = genmet.phi();
 
   // MET
   Handle<CaloMETCollection> recoMETColl;
@@ -651,6 +650,7 @@ RootTupleMaker::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 
   const reco::CaloMET & recomet = (*recoMETColl)[0];
   MET = recomet.et();
+  METPhi = recomet.phi();
 
   if(debug_==true)
     cout << "MET filled" << endl;
@@ -704,10 +704,7 @@ RootTupleMaker::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
       unsigned int trkhits = 0;
       float trkd0 = 0.;
       float trkdz = 0.;
-      float muonGlobalChi2=0.;
-      float muonStandAloneChi2 =0.;
-      float muonTrackerChi2 =0.;
-
+      float muonChi2=0.;
       /*
       if(fastSim_==1)
 	{
@@ -717,30 +714,15 @@ RootTupleMaker::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 	// 	  trkdz    = muon->track()->dz();
 	}
       */
-      
+
+      //keep only global muons
       if(muon->isGlobalMuon()){
 	
 	trkhits  = muon->globalTrack()->numberOfValidHits();
 	trkd0    = muon->globalTrack()->d0();
 	trkdz    = muon->globalTrack()->dz();
-	muonGlobalChi2 = muon->globalTrack()->normalizedChi2();
-	muonGlobalCount++;
-      }
-      
-      if(muon->isStandAloneMuon()){
-	trkhits  = muon->outerTrack()->numberOfValidHits();
-	trkd0    = muon->outerTrack()->d0();
-	trkdz    = muon->outerTrack()->dz();
-	muonStandAloneChi2 = muon->outerTrack()->normalizedChi2();
-	muonStandAloneCount++;
-      }
-
-      if (muon->isTrackerMuon()) {
-	trkhits  = muon->innerTrack()->numberOfValidHits();
-	trkd0    = muon->innerTrack()->d0();
-	trkdz    = muon->innerTrack()->dz();
-	muonTrackerChi2 = muon->innerTrack()->normalizedChi2();
-	muonTrackerCount++;
+	muonChi2 = muon->globalTrack()->normalizedChi2();
+	//	std::cout<<"Muons "<<muonChi2 <<std::endl;
       }
 
       float ptInCone       = 0.;
@@ -767,20 +749,19 @@ RootTupleMaker::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 	    coneHOenergy  = muon->isolationR03().hoEt;
 	  }
 	
-	muonEta[muonCount] = muon->eta();
-	muonPhi[muonCount] = muon->phi();
-	muonPt[muonCount]= muon->pt();
-	muonEnergy[muonCount] = muon->energy();
-	muonCharge[muonCount] = muon->charge();
-	muonEt[muonCount] = muon->et();
-	muonTrkHits[muonCount] = trkhits;
-	muonTrkD0[muonCount] = trkd0;
-	muonTrkDz[muonCount] = trkdz;
-	muonEcalIso[muonCount] = coneEMenergy;
-	muonTrkIso[muonCount] = ptInCone;
-	muonHcalIso[muonCount] = coneHADenergy;
-	muonHOIso[muonCount] = coneHOenergy;
-	
+	muonEta[muonCount]        = muon->eta();
+	muonPhi[muonCount]        = muon->phi();
+	muonPt[muonCount]         = muon->pt();
+	muonEnergy[muonCount]     = muon->energy();
+	muonCharge[muonCount]     = muon->charge();
+	muonTrkHits[muonCount]    = trkhits;
+	muonTrkD0[muonCount]      = trkd0;
+	muonTrkDz[muonCount]      = trkdz;
+	muonEcalIso[muonCount]    = coneEMenergy;
+	muonTrkIso[muonCount]     = ptInCone;
+	muonHcalIso[muonCount]    = coneHADenergy;
+	muonHOIso[muonCount]      = coneHOenergy;
+	muonGlobalChi2[muonCount] = muonChi2;
 	muonCount++;
       }
     } 
@@ -898,15 +879,11 @@ RootTupleMaker::beginJob(const edm::EventSetup&)
   m_tree->Branch("caloJetIC5HADF",&caloJetIC5HADF,"caloJetIC5HADF[caloJetIC5Count]/F");
 
   m_tree->Branch("muonCount",&muonCount,"muonCount/I");
-  m_tree->Branch("muonStandAloneCount",&muonStandAloneCount,"muonStandAloneCount/I");
-  m_tree->Branch("muonGlobalCount",&muonGlobalCount,"muonGlobalCount/I");
-  m_tree->Branch("muonTrackerCount",&muonTrackerCount,"muonTrackerCount/I");
   m_tree->Branch("muonEta",&muonEta,"muonEta[muonCount]/F");
   m_tree->Branch("muonPhi",&muonPhi,"muonPhi[muonCount]/F");
   m_tree->Branch("muonPt",&muonPt,"muonPt[muonCount]/F");
   m_tree->Branch("muonEnergy",&muonEnergy,"muonEnergy[muonCount]/F");
   m_tree->Branch("muonCharge",&muonCharge,"muonCharge[muonCount]/I");
-  m_tree->Branch("muonEt",&muonEt,"muonEt[muonCount]/F");
   m_tree->Branch("muonTrkHits",&muonTrkHits,"muonTrkHits[muonCount]/F");
   m_tree->Branch("muonTrkD0",&muonTrkD0,"muonTrkD0[muonCount]/F");
   m_tree->Branch("muonTrkDz",&muonTrkDz,"muonTrkDz[muonCount]/F");
@@ -915,11 +892,10 @@ RootTupleMaker::beginJob(const edm::EventSetup&)
   m_tree->Branch("muonHcalIso",&muonHcalIso,"muonHcalIso[muonCount]/F");
   m_tree->Branch("muonHOIso",&muonHOIso,"muonHOIso[muonCount]/F");
   m_tree->Branch("muonGlobalChi2",&muonGlobalChi2,"muonGlobalChi2[muonCount]/F");
-  m_tree->Branch("muonStandAloneChi2",&muonStandAloneChi2,"muonStandAloneChi2[muonCount]/F");
-  m_tree->Branch("muonTrackerChi2",&muonTrackerChi2,"muonTrackerChi2[muonCount]/F");
-
   m_tree->Branch("genMET",&genMET,"genMET/F");
+  m_tree->Branch("genMETPhi",&genMETPhi,"genMETPhi/F");
   m_tree->Branch("MET",&MET,"MET/F");
+  m_tree->Branch("METPhi",&METPhi,"METPhi/F");
 
 }
 
