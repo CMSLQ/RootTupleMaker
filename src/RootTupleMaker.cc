@@ -13,7 +13,7 @@
 //
 // Original Author:  Ellie Lockner
 //         Created:  Tue Oct 21 13:56:04 CEST 2008
-// $Id: RootTupleMaker.cc,v 1.13 2009/01/23 10:40:41 santanas Exp $
+// $Id: RootTupleMaker.cc,v 1.14 2009/03/10 11:06:42 santanas Exp $
 //
 //
 
@@ -98,6 +98,9 @@ class RootTupleMaker : public edm::EDAnalyzer {
   // Event info
   int                  event;
   int                  runnum;
+  Float_t              x1;
+  Float_t              x2;
+  Float_t              Q;
 
   // Gen Event Quantities  
   float                m_cross_section;
@@ -250,6 +253,9 @@ RootTupleMaker::RootTupleMaker(const edm::ParameterSet& iConfig)
   event=-999;
   runnum=-999;
   Nstart=0;
+  x1=0;
+  x2=0;
+  Q=0;
 
   m_cross_section=-999.;
   m_auto_cross_section=-999.;
@@ -294,6 +300,16 @@ RootTupleMaker::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 
   event = iEvent.id().event();
   runnum = iEvent.id().run();
+   edm::Handle<edm::HepMCProduct> MC;
+   iEvent.getByType( MC );
+   const HepMC::GenEvent * genEvt = MC->GetEvent();
+   HepMC::PdfInfo* pdfstuff = genEvt->pdf_info();
+   if (pdfstuff !=0){
+     x1 = pdfstuff->x1();
+     x2 = pdfstuff->x2();
+     Q = pdfstuff->scalePDF();
+     //cout << x1 << "\t" << x2 << endl;
+   }
 
   // Fill gen info
 
@@ -809,6 +825,9 @@ RootTupleMaker::beginJob(const edm::EventSetup&)
 
   m_tree->Branch("event",&event,"event/I");
   m_tree->Branch("run",&runnum,"runnum/I");
+  m_tree->Branch("x1",&x1,"x1/F");
+  m_tree->Branch("x2",&x2,"x2/F");
+  m_tree->Branch("Q",&Q,"Q/F");
 
    m_tree->Branch("processID",&m_processID,"processID/I");
    m_tree->Branch("pthat",&m_pthat,"pthat/F");
