@@ -35,6 +35,18 @@
 
 //Event info
 #include "DataFormats/HepMCCandidate/interface/PdfInfo.h"
+#include <SimDataFormats/HepMCProduct/interface/HepMCProduct.h>
+#include "DataFormats/HepMCCandidate/interface/PdfInfo.h"
+//LHAPDF stuff
+
+extern "C" {
+  void initpdfset_(char*, int len);
+  void initpdfsetm_(int &, char*);
+  void initpdf_(int &);
+  void evolvepdf_(double &, double &, double *);
+  void numberpdf_(int &);
+}
+
 
 // GenParticle stuff
 #include "DataFormats/HepMCCandidate/interface/GenParticle.h"
