@@ -13,7 +13,7 @@
 //
 // Original Author:  Ellie Lockner
 //         Created:  Tue Oct 21 13:56:04 CEST 2008
-// $Id: RootTupleMaker.cc,v 1.14 2009/03/10 11:06:42 santanas Exp $
+// $Id: RootTupleMaker.cc,v 1.15 2009/05/20 15:34:39 lockner Exp $
 //
 //
 
@@ -63,6 +63,14 @@ class RootTupleMaker : public edm::EDAnalyzer {
   int singleEleRelHLTCounter;
   int muonHLTCounter;
 
+  // LHAPDF stuff
+  
+  double xfx(const double &x,const double &Q, int fl){
+    double f[13], mx = x, mQ = Q;
+    evolvepdf_(mx, mQ, f);
+    return f[fl+6];
+  };
+
       // ----------member data ---------------------------
  // read from cfg file
   std::string          rootfile_;
@@ -101,6 +109,7 @@ class RootTupleMaker : public edm::EDAnalyzer {
   Float_t              x1;
   Float_t              x2;
   Float_t              Q;
+  Float_t              PDFweight[41];
 
   // Gen Event Quantities  
   float                m_cross_section;
@@ -126,6 +135,7 @@ class RootTupleMaker : public edm::EDAnalyzer {
   Int_t                m_GenParticlePdgId[MAXGENPARTICLES];              
   Int_t                m_GenParticleMotherIndex[MAXGENPARTICLES];
   Int_t                m_GenParticleNumDaught[MAXGENPARTICLES];  
+  Int_t                m_GenParticleStatus[MAXGENPARTICLES];
 
   // Trigger
   TString              aNames[MAXHLTBITS];
@@ -309,6 +319,33 @@ RootTupleMaker::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
      x2 = pdfstuff->x2();
      Q = pdfstuff->scalePDF();
      //cout << x1 << "\t" << x2 << endl;
+   }
+   PdfInfo info; // struct to hold PDF info
+   info.id1 = pdfstuff->id1();
+   info.id2 = pdfstuff->id2();
+   info.x1 = pdfstuff->x1();
+   info.x2 = pdfstuff->x2();
+   info.scalePDF = pdfstuff->scalePDF();
+
+   float best_fit=0;
+   vector<float> weights;
+
+   const char *lhaPDFPath = getenv("LHAPATH");
+   string pdfSet(lhaPDFPath);
+   string::size_type loc = pdfSet.find(":",0);
+   if (loc != string::npos) pdfSet = pdfSet.substr(0,loc);
+   pdfSet.append("/cteq61.LHgrid");
+   initpdfset_((char *)pdfSet.data(), pdfSet.size());
+   // loop over all (error) pdfs
+   for (int subpdf=0; subpdf<41; subpdf++){
+     initpdf_(subpdf);
+     if (subpdf == 0){
+       best_fit = xfx(info.x1, info.scalePDF, info.id1)*xfx(info.x2, info.scalePDF, info.id2);
+       PDFweight[subpdf]=best_fit;
+    }
+     else{
+        PDFweight[subpdf] =xfx(info.x1, info.scalePDF, info.id1)*xfx(info.x2, info.scalePDF, info.id2)/best_fit;
+     }
    }
 
   // Fill gen info
@@ -828,6 +865,7 @@ RootTupleMaker::beginJob(const edm::EventSetup&)
   m_tree->Branch("x1",&x1,"x1/F");
   m_tree->Branch("x2",&x2,"x2/F");
   m_tree->Branch("Q",&Q,"Q/F");
+  m_tree->Branch("PDFweight",&PDFweight,"PDFWeight[41]/F");
 
    m_tree->Branch("processID",&m_processID,"processID/I");
    m_tree->Branch("pthat",&m_pthat,"pthat/F");
@@ -851,6 +889,7 @@ RootTupleMaker::beginJob(const edm::EventSetup&)
   m_tree->Branch("GenParticleVZ",&m_GenParticleVZ,"GenParticleVZ[GenParticleCount]/F");
   m_tree->Branch("GenParticleMotherIndex",&m_GenParticleMotherIndex,"GenParticleMotherIndex[GenParticleCount]/I");
   m_tree->Branch("GenParticleNumDaught",&m_GenParticleNumDaught,"GenParticleNumDaught[GenParticleCount]/I");
+  m_tree->Branch("GenParticleStatus",&m_GenParticleStatus,"GenParticleStatus[GenParticleCount]/I");
 
   m_tree->Branch("hltCount",&hltCount,"hltCount/I");
   m_tree->Branch("hltNamesLen",&hltNamesLen,"hltNamesLen/I");
@@ -940,6 +979,7 @@ void RootTupleMaker::CreateParticleTree(edm::Handle<reco::GenParticleCollection>
     m_GenParticleE[m_GenParticleCount] = cand->energy();
     m_GenParticlePdgId[m_GenParticleCount] = cand->pdgId();
     m_GenParticleNumDaught[m_GenParticleCount] = cand->numberOfDaughters();
+    m_GenParticleStatus[m_GenParticleCount] = cand->status();
    
     m_GenParticleVX[m_GenParticleCount] = cand->vx();
     m_GenParticleVY[m_GenParticleCount] = cand->vy();
