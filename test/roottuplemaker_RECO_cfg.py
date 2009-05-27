@@ -13,22 +13,21 @@ process.MessageLogger.cerr.default.limit = 100
 process.MessageLogger.cerr.FwkReport.reportEvery = 100
 #################################################################
 
-process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(1000) )
+process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(-1) )
 
 process.source = cms.Source("PoolSource",
     fileNames = cms.untracked.vstring(
        #'file:/home/lockner/Data/Summer08_Bkgnd/QCD_AOD.root'     # AOD (QCD)
        #'file:/home/santanas/Data/C81A2D83-ED9A-DD11-98F1-0015C5E59E7F.root'  #FULLSIM RECO (QCD)
        #'file:/home/lockner/Data/Summer08_Bkgnd/new_TTbar_madgraph.root'  #FULLSIM RECO (TTbar)
-       'file:/home/lockner/Data/Summer08_Bkgnd/Zjet_Madgraph_RECO.root'  #FULLSIM RECO (Z+jets)
+       'file:/data/se/store/mc/Summer08/Exotica_LQtoUE_M400/GEN-SIM-RECO/IDEAL_V9_v1/0000/14A5A4E1-B6B1-DD11-8344-001E0B465C8A.root' 
     )
 )
 
 process.treeCreator = cms.EDAnalyzer('RootTupleMaker'
 )
 
-#process.treeCreator.rootfile        = cms.untracked.string("TTree_ZJet_3_jetThr10.root")
-process.treeCreator.rootfile        = cms.untracked.string("TTree_ZJet_3_debug4.root")
+process.treeCreator.rootfile        = cms.untracked.string("TTree_uds_fromTTBar.root")
 process.treeCreator.maxgenparticles = cms.untracked.int32(50)
 process.treeCreator.maxgenjets      = cms.untracked.int32(10)
 process.treeCreator.maxelectrons    = cms.untracked.int32(10)
@@ -100,7 +99,9 @@ process.L3AbsoluteJetCorrector = cms.ESSource("L3AbsoluteCorrectionService",
 )
 #############   Define the L5 correction service #####
 process.L5JetCorrector = cms.ESSource("L5FlavorCorrectionService",
-    section = cms.string('b'), 
+#    section = cms.string('b'), 
+    section = cms.string('uds'), 
+#    tagName = cms.string('L5Flavor_fromQCD_iterativeCone5'),
     tagName = cms.string('L5Flavor_fromTTbar_iterativeCone5'),
     label = cms.string('L5FlavorJetCorrector')
 )
