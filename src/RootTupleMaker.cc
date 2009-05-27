@@ -13,7 +13,7 @@
 //
 // Original Author:  Ellie Lockner
 //         Created:  Tue Oct 21 13:56:04 CEST 2008
-// $Id: RootTupleMaker.cc,v 1.15 2009/05/20 15:34:39 lockner Exp $
+// $Id: RootTupleMaker.cc,v 1.16 2009/05/26 23:39:17 lockner Exp $
 //
 //
 
@@ -89,6 +89,8 @@ class RootTupleMaker : public edm::EDAnalyzer {
   int                  prescaleSingleEleRel_;
   int                  prescaleMuon_;
   bool                 useSkim1st2ndGenLQ_;
+  bool                 usePDFweight_;
+  std::string          PDFset_;
   double               skim1st2ndGenLQpTEle_;
   double               skim1st2ndGenLQpTMu_; 
   double               skim1st2ndGenLQpTJet_; 
@@ -250,6 +252,8 @@ RootTupleMaker::RootTupleMaker(const edm::ParameterSet& iConfig)
   prescaleMuon_          = iConfig.getUntrackedParameter<int>("prescaleMuon",30);
 
   useSkim1st2ndGenLQ_       = iConfig.getUntrackedParameter<bool>("useSkim1st2ndGenLQ", 1);
+  usePDFweight_             = iConfig.getUntrackedParameter<bool>("usePDFweight",1);
+  PDFset_                   = iConfig.getUntrackedParameter<std::string>("PDFSet");
   skim1st2ndGenLQpTEle_  = iConfig.getUntrackedParameter<double>("skim1st2ndGenLQpTEle", 20);
   skim1st2ndGenLQpTMu_  = iConfig.getUntrackedParameter<double>("skim1st2ndGenLQpTMu", 20);
   skim1st2ndGenLQpTJet_  = iConfig.getUntrackedParameter<double>("skim1st2ndGenLQpTJet", 10);
@@ -266,6 +270,7 @@ RootTupleMaker::RootTupleMaker(const edm::ParameterSet& iConfig)
   x1=0;
   x2=0;
   Q=0;
+  for (int i=0;i<41;i++) PDFweight[i]=0;
 
   m_cross_section=-999.;
   m_auto_cross_section=-999.;
@@ -328,26 +333,26 @@ RootTupleMaker::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
    info.scalePDF = pdfstuff->scalePDF();
 
    float best_fit=0;
-   vector<float> weights;
 
-   const char *lhaPDFPath = getenv("LHAPATH");
-   string pdfSet(lhaPDFPath);
-   string::size_type loc = pdfSet.find(":",0);
-   if (loc != string::npos) pdfSet = pdfSet.substr(0,loc);
-   pdfSet.append("/cteq61.LHgrid");
-   initpdfset_((char *)pdfSet.data(), pdfSet.size());
-   // loop over all (error) pdfs
-   for (int subpdf=0; subpdf<41; subpdf++){
-     initpdf_(subpdf);
-     if (subpdf == 0){
-       best_fit = xfx(info.x1, info.scalePDF, info.id1)*xfx(info.x2, info.scalePDF, info.id2);
-       PDFweight[subpdf]=best_fit;
-    }
-     else{
-        PDFweight[subpdf] =xfx(info.x1, info.scalePDF, info.id1)*xfx(info.x2, info.scalePDF, info.id2)/best_fit;
-     }
+   if (usePDFweight_){
+      const char *lhaPDFPath = getenv("LHAPATH");
+      string pdfSet(lhaPDFPath);
+      string::size_type loc = pdfSet.find(":",0);
+      if (loc != string::npos) pdfSet = pdfSet.substr(0,loc);
+      pdfSet.append(PDFset_);
+      initpdfset_((char *)pdfSet.data(), pdfSet.size());
+      // loop over all (error) pdfs
+      for (int subpdf=0; subpdf<41; subpdf++){
+        initpdf_(subpdf);
+        if (subpdf == 0){
+          best_fit = xfx(info.x1, info.scalePDF, info.id1)*xfx(info.x2, info.scalePDF, info.id2);
+          PDFweight[subpdf]=best_fit;
+       }
+        else{
+           PDFweight[subpdf] =xfx(info.x1, info.scalePDF, info.id1)*xfx(info.x2, info.scalePDF, info.id2)/best_fit;
+        }
+      }
    }
-
   // Fill gen info
 
   //using HepMCProduct
