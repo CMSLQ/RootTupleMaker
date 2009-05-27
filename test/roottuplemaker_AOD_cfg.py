@@ -41,6 +41,8 @@ process.treeCreator.numEvents       = cms.untracked.int32(10)
 process.treeCreator.saveTrigger     = cms.untracked.bool(True)
 
 process.treeCreator.useSkim1st2ndGenLQ = cms.untracked.bool(True)
+process.treeCreator.usePDFweight       = cms.untracked.bool(False)
+process.treeCreator.PDFSet             = cms.untracked.string("/cteq61.LHgrid")
 process.treeCreator.skim1st2ndGenLQpTEle  =  cms.untracked.double(20)
 process.treeCreator.skim1st2ndGenLQpTMu  =  cms.untracked.double(20)
 process.treeCreator.skim1st2ndGenLQpTJet  =  cms.untracked.double(10)
@@ -94,8 +96,10 @@ process.L3AbsoluteJetCorrector = cms.ESSource("L3AbsoluteCorrectionService",
 )
 #############   Define the L5 correction service #####
 process.L5JetCorrector = cms.ESSource("L5FlavorCorrectionService",
-    section = cms.string('b'), 
-    tagName = cms.string('L5Flavor_fromTTbar_iterativeCone5'),
+#    section = cms.string('b'), 
+#    tagName = cms.string('L5Flavor_fromTTbar_iterativeCone5'),
+    section = cms.string('uds'), 
+    tagName = cms.string('L5Flavor_fromQCD_iterativeCone5'),
     label = cms.string('L5FlavorJetCorrector')
 )
 #############   Define the chain corrector service ###
