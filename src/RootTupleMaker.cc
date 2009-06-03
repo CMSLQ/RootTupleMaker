@@ -13,7 +13,7 @@
 //
 // Original Author:  Ellie Lockner
 //         Created:  Tue Oct 21 13:56:04 CEST 2008
-// $Id: RootTupleMaker.cc,v 1.16 2009/05/26 23:39:17 lockner Exp $
+// $Id: RootTupleMaker.cc,v 1.17 2009/05/27 15:04:14 lockner Exp $
 //
 //
 
@@ -315,22 +315,41 @@ RootTupleMaker::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 
   event = iEvent.id().event();
   runnum = iEvent.id().run();
-   edm::Handle<edm::HepMCProduct> MC;
-   iEvent.getByType( MC );
-   const HepMC::GenEvent * genEvt = MC->GetEvent();
-   HepMC::PdfInfo* pdfstuff = genEvt->pdf_info();
-   if (pdfstuff !=0){
-     x1 = pdfstuff->x1();
-     x2 = pdfstuff->x2();
-     Q = pdfstuff->scalePDF();
-     //cout << x1 << "\t" << x2 << endl;
-   }
-   PdfInfo info; // struct to hold PDF info
-   info.id1 = pdfstuff->id1();
-   info.id2 = pdfstuff->id2();
-   info.x1 = pdfstuff->x1();
-   info.x2 = pdfstuff->x2();
-   info.scalePDF = pdfstuff->scalePDF();
+
+  // Fill gen info
+
+  //using HepMCProduct
+
+  // work in CSA08 RECO //////////////////////////////////
+    Handle<HepMCProduct> mcHandle;
+    iEvent.getByLabel("source", mcHandle );
+    const HepMCProduct* mcCollection = mcHandle.failedToGet () ? 0 : &*mcHandle;
+    
+    int processID = -99;
+    double pthat = -99;
+    if (mcCollection) {
+      const HepMC::GenEvent *genEvt = mcCollection->GetEvent();
+      processID = genEvt->signal_process_id();
+    }
+  m_processID = processID;
+  m_pthat = pthat;
+
+  PdfInfo info; //struct to hold PDF info
+  edm::Handle<reco::PdfInfo> pdfHandle;
+  iEvent.getByLabel("genEventPdfInfo",pdfHandle);
+  const PdfInfo* pdfCollection = pdfHandle.failedToGet () ? 0 : &*pdfHandle;
+  if (pdfCollection){
+    pthat = pdfCollection->scalePDF;
+     x1 = pdfCollection->x1;
+     x2 = pdfCollection->x2;
+     Q = pdfCollection->scalePDF;
+   info.id1 = pdfCollection->id1;
+   info.id2 = pdfCollection->id2;
+   info.x1 = pdfCollection->x1;
+   info.x2 = pdfCollection->x2;
+   info.scalePDF = pdfCollection->scalePDF;
+
+  }
 
    float best_fit=0;
 
@@ -353,45 +372,7 @@ RootTupleMaker::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
         }
       }
    }
-  // Fill gen info
 
-  //using HepMCProduct
-
-  // work in CSA08 RECO //////////////////////////////////
-    Handle<HepMCProduct> mcHandle;
-    iEvent.getByLabel("source", mcHandle );
-    const HepMCProduct* mcCollection = mcHandle.failedToGet () ? 0 : &*mcHandle;
-    
-    int processID = -99;
-    double pthat = -99;
-    if (mcCollection) {
-      const HepMC::GenEvent *genEvt = mcCollection->GetEvent();
-      processID = genEvt->signal_process_id();
-//       pthat = genEvt->event_scale(); 
-    }
-
-    
-  edm::Handle<reco::PdfInfo> pdfHandle;
-  iEvent.getByLabel("genEventPdfInfo",pdfHandle);
-  const PdfInfo* pdfCollection = pdfHandle.failedToGet () ? 0 : &*pdfHandle;
-  if (pdfCollection){
-    pthat = pdfCollection->scalePDF;
-  }
-
-  m_processID = processID;
-  m_pthat = pthat;
-
-//     cout << processID << endl;
-//     cout << pthat << endl;
-
-  //using genEvent products
-
-  // ## don't work in CSA08 RECO
-  //   Handle<int> genProcessID; 
-  //   iEvent.getByLabel( "genEventProcID", genProcessID ); 
-  //   double processID = *genProcessID;
-  //   cout << processID << endl; 
-  // ##
 
   // ## work in CSA08 RECO
   //   Handle<double> genEventScale; 
