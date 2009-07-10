@@ -42,13 +42,19 @@ process.treeCreator.luminosity      =  cms.untracked.double(100)
 process.treeCreator.numEvents       = cms.untracked.int32(10)
 process.treeCreator.saveTrigger     = cms.untracked.bool(True)
 
-process.treeCreator.useSkim1st2ndGenLQ = cms.untracked.bool(True)
+process.treeCreator.useSkim1st2ndGenLQ = cms.untracked.bool(False)
+process.treeCreator.useSkim1st2ndGenLQenujj = cms.untracked.bool(False)
 process.treeCreator.usePDFweight       = cms.untracked.bool(False)
 process.treeCreator.PDFSet             = cms.untracked.string("/cteq61.LHgrid")
 process.treeCreator.skim1st2ndGenLQpTEle  =  cms.untracked.double(20)
 process.treeCreator.skim1st2ndGenLQpTMu  =  cms.untracked.double(20)
 process.treeCreator.skim1st2ndGenLQpTJet  =  cms.untracked.double(10)
 process.treeCreator.skim1st2ndGenLQDeltaRJetEle  =  cms.untracked.double(0.1)
+
+##only for Skim1st2ndGenLQenujj
+process.treeCreator.skim1st2ndGenLQMET = cms.untracked.double(40)
+##
+
 
 ######## electron isolation  ########
 process.load("Configuration.StandardSequences.Geometry_cff")

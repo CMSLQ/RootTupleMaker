@@ -13,19 +13,22 @@ process.MessageLogger.cerr.default.limit = 100
 process.MessageLogger.cerr.FwkReport.reportEvery = 100
 #################################################################
 
-process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(10) )
+process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(100) )
 
 process.source = cms.Source("PoolSource",
     fileNames = cms.untracked.vstring(
-       'file:/home/lockner/Data/Summer08_Bkgnd/QCD_AOD.root'     # AOD (QCD)
-       #'file:/home/santanas/Data/C81A2D83-ED9A-DD11-98F1-0015C5E59E7F.root'  #FULLSIM RECO (QCD)
+    #'file:/pcuscms/pcuscms46/data/MCData/AOD/PYTHIA6_Exotica_LQ_eejj_400_cff_py_GEN_FASTSIM.root'
+    'file:/pcuscms/pcuscms46/data/MCData/AOD/PYTHIA6_Exotica_LQ_enujj_400_cff_py_GEN_FASTSIM.root'    
+    #   'file:/home/lockner/Data/Summer08_Bkgnd/QCD_AOD.root'     # AOD (QCD)
+    #'file:/home/santanas/Data/C81A2D83-ED9A-DD11-98F1-0015C5E59E7F.root'  #FULLSIM RECO (QCD)
     )
 )
 
 process.treeCreator = cms.EDAnalyzer('RootTupleMaker'
 )
 
-process.treeCreator.rootfile        = cms.untracked.string("TTree.root")
+#process.treeCreator.rootfile        = cms.untracked.string("TTree_PYTHIA6_Exotica_LQ_enujj_400_cff_py_GEN_FASTSIM.root")
+process.treeCreator.rootfile        = cms.untracked.string("TTree_test_enujj.root")
 process.treeCreator.maxgenparticles = cms.untracked.int32(50)
 process.treeCreator.maxgenjets      = cms.untracked.int32(10)
 process.treeCreator.maxelectrons    = cms.untracked.int32(10)
@@ -40,13 +43,17 @@ process.treeCreator.luminosity      =  cms.untracked.double(100)
 process.treeCreator.numEvents       = cms.untracked.int32(10)
 process.treeCreator.saveTrigger     = cms.untracked.bool(True)
 
-process.treeCreator.useSkim1st2ndGenLQ = cms.untracked.bool(True)
+process.treeCreator.useSkim1st2ndGenLQ = cms.untracked.bool(False)
+process.treeCreator.useSkim1st2ndGenLQenujj = cms.untracked.bool(False)
 process.treeCreator.usePDFweight       = cms.untracked.bool(False)
 process.treeCreator.PDFSet             = cms.untracked.string("/cteq61.LHgrid")
 process.treeCreator.skim1st2ndGenLQpTEle  =  cms.untracked.double(20)
 process.treeCreator.skim1st2ndGenLQpTMu  =  cms.untracked.double(20)
 process.treeCreator.skim1st2ndGenLQpTJet  =  cms.untracked.double(10)
 process.treeCreator.skim1st2ndGenLQDeltaRJetEle  =  cms.untracked.double(0.1)
+##only for Skim1st2ndGenLQenujj
+process.treeCreator.skim1st2ndGenLQMET = cms.untracked.double(40)
+##
 
 ######## electron isolation  ########
 process.load("Configuration.StandardSequences.Geometry_cff")

@@ -10,31 +10,35 @@ process.load("FWCore.MessageService.MessageLogger_cfi")
 # the size of the output by prescaling the report of the event number
 process.load("FWCore.MessageLogger.MessageLogger_cfi")
 process.MessageLogger.cerr.default.limit = 100
-process.MessageLogger.cerr.FwkReport.reportEvery = 100
+process.MessageLogger.cerr.FwkReport.reportEvery = 1
 #################################################################
 
-process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(10) )
+process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(100) )
 
 process.source = cms.Source("PoolSource",
     fileNames = cms.untracked.vstring(
-       #'file:/home/lockner/Data/Summer08_Bkgnd/QCD_AOD.root'     # AOD (QCD)
-       #'file:/home/santanas/Data/C81A2D83-ED9A-DD11-98F1-0015C5E59E7F.root'  #FULLSIM RECO (QCD)
-       #'file:/home/lockner/Data/Summer08_Bkgnd/new_TTbar_madgraph.root'  #FULLSIM RECO (TTbar)
-       'file:/data/se/store/mc/Summer08/Exotica_LQtoUE_M400/GEN-SIM-RECO/IDEAL_V9_v1/0000/14A5A4E1-B6B1-DD11-8344-001E0B465C8A.root' 
+    #'file:/home/lockner/Data/Summer08_Bkgnd/QCD_AOD.root'     # AOD (QCD)
+    #'file:/home/santanas/Data/C81A2D83-ED9A-DD11-98F1-0015C5E59E7F.root'  #FULLSIM RECO (QCD)
+    #'file:/home/lockner/Data/Summer08_Bkgnd/new_TTbar_madgraph.root'  #FULLSIM RECO (TTbar)
+    #'file:/data/se/store/mc/Summer08/Exotica_LQtoUE_M400/GEN-SIM-RECO/IDEAL_V9_v1/0000/14A5A4E1-B6B1-DD11-8344-001E0B465C8A.root'
+    #'file:/pcuscms/pcuscms46/data/MCData/RECO/Summer08/new_TTbar_madgraph.root'
+    'file:/pcuscms/pcuscms46/data/MCData/RECO/Summer08/Zjet_Madgraph_RECO.root'
     )
 )
 
 process.treeCreator = cms.EDAnalyzer('RootTupleMaker'
 )
 
-process.treeCreator.rootfile        = cms.untracked.string("TTree_uds_fromTTBar.root")
+process.treeCreator.rootfile        = cms.untracked.string("TTree_test_zjets_enujjskim.root")
 process.treeCreator.maxgenparticles = cms.untracked.int32(50)
 process.treeCreator.maxgenjets      = cms.untracked.int32(10)
 process.treeCreator.maxelectrons    = cms.untracked.int32(10)
 process.treeCreator.maxcalojets     = cms.untracked.int32(10)
 process.treeCreator.maxmuons        = cms.untracked.int32(10)
+######????????? but it works like that..
 process.treeCreator.aodsim          = cms.untracked.bool(True)
 process.treeCreator.fastSim         = cms.untracked.bool(True)
+######?????????
 process.treeCreator.PAT             = cms.untracked.bool(False)
 process.treeCreator.debug           = cms.untracked.bool(False)
 # overall luminosity normalization  (in pb-1) 	
@@ -42,13 +46,18 @@ process.treeCreator.luminosity      =  cms.untracked.double(100)
 process.treeCreator.numEvents       = cms.untracked.int32(10)
 process.treeCreator.saveTrigger     = cms.untracked.bool(True)
 
-process.treeCreator.useSkim1st2ndGenLQ = cms.untracked.bool(True)
+process.treeCreator.useSkim1st2ndGenLQ = cms.untracked.bool(False)
+process.treeCreator.useSkim1st2ndGenLQenujj = cms.untracked.bool(False)
 process.treeCreator.usePDFweight       = cms.untracked.bool(False)
 process.treeCreator.PDFSet             = cms.untracked.string("/cteq61.LHgrid")
 process.treeCreator.skim1st2ndGenLQpTEle  =  cms.untracked.double(20)
 process.treeCreator.skim1st2ndGenLQpTMu  =  cms.untracked.double(20)
 process.treeCreator.skim1st2ndGenLQpTJet  =  cms.untracked.double(10)
 process.treeCreator.skim1st2ndGenLQDeltaRJetEle  =  cms.untracked.double(0.1)
+
+##only for Skim1st2ndGenLQenujj
+process.treeCreator.skim1st2ndGenLQMET = cms.untracked.double(40)
+##
 
 ######## electron isolation  ########
 process.load("Configuration.StandardSequences.Geometry_cff")
